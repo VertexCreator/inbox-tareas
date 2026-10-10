@@ -4,10 +4,12 @@ import { useAuth } from '../lib/auth'
 import { ChangePassword } from '../pages/Login'
 import { btn } from './ui'
 import { ThemeToggle } from './ThemeToggle'
+import { QuickAdd } from './QuickAdd'
 
 export function Layout() {
   const { member, isAdmin, signOut } = useAuth()
   const [changingPassword, setChangingPassword] = useState(false)
+  const [adding, setAdding] = useState(false)
   const links = [
     { to: '/', label: 'Hoy' },
     { to: '/listas', label: 'Listas' },
@@ -41,6 +43,13 @@ export function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm text-stone-500 dark:text-stone-400">
+            <button
+              className="inline-flex h-8 items-center gap-1 rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white hover:bg-indigo-700 active:scale-95"
+              onClick={() => setAdding(true)}
+              title="Agregar una tarea o pendiente a mano"
+            >
+              + Nueva tarea
+            </button>
             <span className="hidden sm:inline">
               {member?.name}
               {isAdmin ? ' · admin' : ''}
@@ -81,6 +90,7 @@ export function Layout() {
         )}
         <Outlet />
       </main>
+      {adding && <QuickAdd onClose={() => setAdding(false)} />}
     </div>
   )
 }

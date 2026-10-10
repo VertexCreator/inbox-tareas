@@ -136,6 +136,19 @@ export function SummaryBoard({
             ))}
           </Link>
         )}
+        {(d.iniciativas?.length ?? 0) > 0 && (
+          <Link to="/tablero" className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900">
+            <div className="mb-1 font-medium">⏱ {d.iniciativas!.length} iniciativas vencen →</div>
+            {d.iniciativas!.slice(0, 3).map((x, i) => (
+              <div key={i} className={`truncate ${x.overdue ? 'font-medium text-red-700 dark:text-red-300' : 'opacity-80'}`}>
+                {x.brand ? `${x.brand} · ` : ''}
+                {x.title}
+                {x.owner ? ` · ${x.owner}` : ''}
+                {x.overdue ? ' · vencida' : ''}
+              </div>
+            ))}
+          </Link>
+        )}
         {d.equipo && (
           <div className="rounded-lg bg-stone-100 p-2.5 text-xs dark:bg-stone-800/60">
             <div className="mb-1 font-medium">👥 Equipo</div>

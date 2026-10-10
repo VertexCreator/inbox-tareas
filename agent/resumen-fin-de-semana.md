@@ -166,6 +166,15 @@ corridas anteriores (`select ... from public.emails where status = 'pendiente' a
 - `pendientes`: pendientes nuevos, como `[{ "title", "brand", "recommended" }]`, donde `recommended` es el
   nombre de la persona recomendada.
 - `equipo`: una frase sobre la carga (quién está saturado), o `null`.
+- `iniciativas`: iniciativas del tablero (de correos **o creadas a mano**) que vencen hoy o están vencidas, como
+  `[{ "title", "brand", "owner", "due", "overdue" }]`. Máximo 5, primero las vencidas:
+  ```sql
+  select t.title, b.name as brand, m.name as owner, t.due_date as due, t.due_date < current_date as overdue
+  from public.tasks t left join public.brands b on b.id = t.brand_id
+  left join public.team_members m on m.id = t.assignee_id
+  where t.status in ('por_hacer','en_curso') and t.due_date <= current_date
+  order by t.due_date limit 5;
+  ```
 - `junk`: número de correos basura filtrados.
 - `suspicious`: lista de títulos de correos sospechosos.
 - Omite (con `null` o `[]`) lo que el "Formato del resumen" diga que no incluyas.
@@ -182,7 +191,8 @@ select public.log_agent_run($json$ {
             "from": "Carla Stolk", "brand": "Vaseline", "due": "2026-10-16", "mentioned": true, "gmail_message_id": "..."}],
     "p2": [], "p3": [], "p1_total": 1, "p2_total": 3, "p3_total": 2,
     "pendientes": [{"title": "Video de producto TikTok", "brand": "Peros", "recommended": "Diego"}],
-    "equipo": "Ana va al 92% de carga.", "junk": 31, "suspicious": []
+    "equipo": "Ana va al 92% de carga.", "junk": 31, "suspicious": [],
+    "iniciativas": [{"title": "Sesión de fotos Axe", "brand": "Axe", "owner": "Ana", "due": "2026-10-10", "overdue": true}]
   }
 } $json$::jsonb);
 ```

@@ -101,6 +101,7 @@ export interface ListItem {
   created_by: string | null
   brand_id: string | null
   suggested_brand: string | null
+  auto_plan: boolean
   created_at: string
 }
 
@@ -253,6 +254,7 @@ export interface SummaryData {
   equipo?: string | null
   junk?: number | null
   suspicious?: string[]
+  iniciativas?: { title: string; brand?: string | null; owner?: string | null; due?: string | null; overdue?: boolean }[]
 }
 
 export interface Settings {

@@ -15,6 +15,21 @@ y se convierten en iniciativas con ayuda del agente.
 - **Modo claro u oscuro:** el botón con el sol o la luna en la barra de arriba cambia el tema al instante.
   El dashboard lo recuerda en tu navegador.
 
+## Agregar una tarea a mano
+
+Usa el botón **+ Nueva tarea** de la barra de arriba, desde cualquier página, para lo que no llegó por correo.
+
+- **Equipo:** agrega un **pendiente** a una lista (por defecto, *Tareas manuales*) con descripción, marca, fecha y
+  prioridad. Con **Pedir plan al agente** marcado, el Planificador arma en la próxima media hora la tarea, las
+  subtareas y las personas recomendadas, y la gerente lo confirma. En la lista verás "Plan en camino ✦".
+- **Gerente:** tiene dos opciones.
+  - **Iniciativa directa:** va al tablero con marca, responsable, fecha, estatus y subtareas. Si no eliges
+    responsable, el agente sugiere uno.
+  - **Pendiente para planificar:** arma la recomendación al instante y te lleva a revisarla.
+
+Lo agregado a mano entra al mismo circuito que lo que llega por correo: aparece en el tablero, en Mis tickets y
+en la actividad, y el resumen del día avisa si vence.
+
 ## 2. Conceptos
 
 | Término | Qué es |

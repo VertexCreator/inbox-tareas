@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, shortDate, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
@@ -22,8 +22,9 @@ export function Listas() {
   const [items, setItems] = useState<ListItem[]>([])
   const [templates, setTemplates] = useState<PlanTemplate[]>([])
   const [skills, setSkills] = useState<string[]>([])
-  const [selected, setSelected] = useState<string | null>(null)
-  const [planning, setPlanning] = useState<string | null>(null)
+  const [params] = useSearchParams()
+  const [selected, setSelected] = useState<string | null>(params.get('lista'))
+  const [planning, setPlanning] = useState<string | null>(params.get('plan'))
   const [showClosed, setShowClosed] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -153,7 +154,11 @@ export function Listas() {
                   </div>
                   <span className="justify-self-end md:justify-self-start">
                     <span className={`rounded-md px-2 py-0.5 text-[11px] ${task?.status === 'hecho' ? STATUS.planificado.cls : STATUS[item.status].cls}`}>
-                      {task?.status === 'hecho' ? 'Terminado' : STATUS[item.status].label}
+                      {task?.status === 'hecho'
+                        ? 'Terminado'
+                        : item.auto_plan && item.status === 'sin_planificar'
+                          ? 'Plan en camino ✦'
+                          : STATUS[item.status].label}
                     </span>
                     {subs.length > 0 && (
                       <span className="ml-1.5 text-[11px] text-stone-500 dark:text-stone-400">
@@ -229,7 +234,9 @@ export function Listas() {
 }
 
 function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[]; onCreated: () => void }) {
+  const { isAdmin } = useAuth()
   const [brand, setBrand] = useState('')
+  const [autoPlan, setAutoPlan] = useState(true)
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [due, setDue] = useState('')
@@ -248,6 +255,7 @@ function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[
       due_date: due || null,
       priority: priority || null,
       brand_id: brand || null,
+      auto_plan: !isAdmin && autoPlan,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -289,6 +297,12 @@ function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[
           <option value="P2">P2</option>
           <option value="P3">P3</option>
         </select>
+        {!isAdmin && (
+          <label className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400" title="El agente propone tarea, subtareas y personas; la gerente confirma">
+            <input type="checkbox" checked={autoPlan} onChange={(e) => setAutoPlan(e.target.checked)} />
+            Pedir plan al agente
+          </label>
+        )}
         <button className={btnPrimary} type="submit" disabled={busy}>
           Agregar
         </button>
