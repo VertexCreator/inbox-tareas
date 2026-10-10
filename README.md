@@ -14,7 +14,7 @@ Gmail ──(Claude con tu plan, 8:00 · 13:00 · 18:00)──► Supabase ◄�
 | Pieza | Dónde | Qué hace |
 |---|---|---|
 | Análisis | `agent/analisis-inbox.md` | Prompt de la tarea programada en Claude (conectores Gmail + Supabase). Clasifica, prioriza, crea borradores (nunca envía) y tareas. |
-| Prioridades | `agent/prioridades.md` | Tus VIPs, temas P1/P2, categorías. Lenguaje normal. |
+| Prioridades | Supabase `agent_priorities` | Tus VIPs, temas P1/P2, categorías. Se editan en el dashboard → Reglas. Solo admin. |
 | Reparto | `supabase/migrations/` → `route_task()` | 1) reglas aprendidas, 2) especialista con menos carga, 3) tarea general → menor carga. Pide aprobación si el especialista está saturado o es P1 urgente. |
 | Aprendizaje | `reassign_task()` | Al corregir con palabra clave se crea una regla ("instagram" → Ana). |
 | Dashboard | `web/` | React + Vite + Tailwind. Login con Google Workspace. |
@@ -67,14 +67,12 @@ Cada `git push` a `main` vuelve a publicar solo. Vercel solo sirve la página: l
 en las pantallas de todos.
 
 ### 5. Agente (con tu plan de Claude)
-1. Conecta el conector **Gmail** (y Supabase) en Claude.
-2. Crea una tarea programada a las 8:00, 13:00 y 18:00 con el prompt de `agent/analisis-inbox.md`.
-   La app de escritorio tiene que estar abierta para que corra.
+Sigue [INSTALACION.md](INSTALACION.md) en la computadora que va a correr el agente.
 
 ## Base de datos
 
 Migraciones en `supabase/migrations/`. Tablas: `team_members`, `emails` (solo admin), `tasks`,
-`assignment_rules`, `assignment_log`, `agent_runs` (solo admin), `settings`. Vista `member_load`.
+`assignment_rules`, `assignment_log`, `agent_runs` (solo admin), `agent_priorities` (solo admin), `settings`. Vista `member_load`.
 
 Para cambiar el modo (sugerencia ↔ automático) o el umbral de saturación: página **Reglas**.
 

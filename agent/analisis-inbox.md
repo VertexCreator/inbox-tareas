@@ -2,9 +2,11 @@
 
 Este es el prompt de la tarea programada que corre con el plan Claude del administrador
 a las 8:00, 13:00 y 18:00. Necesita dos conectores activos en esa sesión: **Gmail** y **Supabase**.
+No depende de archivos locales: todo lo que necesita está en Supabase.
 
 - Proyecto de Supabase: `ddqpbbktcoznkifwyoiy` (inbox-tareas)
-- Prioridades del usuario: `~/inbox-tareas/agent/prioridades.md` (léelo primero)
+- Cuenta de Gmail a analizar: `sgomez@dimassicorp.com`
+- Prioridades del usuario: tabla `agent_priorities` (se editan en el dashboard → Reglas)
 
 ---
 
@@ -23,7 +25,10 @@ a las 8:00, 13:00 y 18:00. Necesita dos conectores activos en esa sesión: **Gma
 ## Pasos
 
 ### 1. Contexto
-- Lee `prioridades.md`.
+- Lee las prioridades del usuario y síguelas en todo el análisis:
+  ```sql
+  select content from public.agent_priorities where id = 1;
+  ```
 - Consulta el equipo y lo aprendido (para elegir bien la especialidad):
   ```sql
   select name, specialties, available from public.team_members where active;
@@ -44,7 +49,7 @@ en la bandeja de entrada. Lee remitente, asunto y cuerpo.
 
 ### 3. Clasificar cada correo
 Para cada uno decide:
-- `category`: una de las categorías de `prioridades.md`.
+- `category`: una de las categorías de las prioridades.
 - `priority`: `P1` (responder hoy), `P2` (esta semana), `P3` (cuando se pueda) o `ninguna` (no pide nada / basura).
 - `needs_reply`: true si espera una respuesta tuya.
 - `summary`: una línea en español, qué piden y para cuándo.
@@ -67,7 +72,7 @@ idioma del correo, sin inventar datos ni compromisos; deja `[completar]` donde f
 Vuelve a llamar a `ingest_email` con `"draft_created": true`.
 
 ### 5. Tareas para el equipo
-Si un correo pide trabajo que puede hacer el equipo (según `prioridades.md`), crea una o más tareas:
+Si un correo pide trabajo que puede hacer el equipo (según las prioridades), crea una o más tareas:
 ```sql
 select public.create_task_from_email($json$ {
   "gmail_message_id": "...",

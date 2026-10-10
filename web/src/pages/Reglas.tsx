@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { memberName, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { LogEntry, Rule, Settings } from '../lib/types'
-import { Card, Empty, SectionTitle, Tag, btn, input, relativeDate } from '../components/ui'
+import { Card, Empty, SectionTitle, Tag, btn, btnPrimary, input, relativeDate } from '../components/ui'
 
 const MODE_LABEL: Record<string, string> = {
   auto: 'Automática',
@@ -10,6 +10,80 @@ const MODE_LABEL: Record<string, string> = {
   aprobada: 'Aprobada',
   corregida: 'Corregida',
   manual: 'Manual',
+}
+
+// Lo que el agente lee en cada análisis: VIPs, temas P1/P2, categorías. Solo lo ve el admin.
+function PrioritiesEditor() {
+  const [saved, setSaved] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null)
+  const [status, setStatus] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('agent_priorities')
+      .select('content, updated_at')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) return setStatus({ tone: 'error', text: error.message })
+        setSaved(data?.content ?? '')
+        setDraft(data?.content ?? '')
+        setUpdatedAt(data?.updated_at ?? null)
+      })
+  }, [])
+
+  const save = async () => {
+    if (!draft.trim()) return setStatus({ tone: 'error', text: 'Las prioridades no pueden quedar vacías.' })
+    setBusy(true)
+    const now = new Date().toISOString()
+    const { error } = await supabase.from('agent_priorities').update({ content: draft, updated_at: now }).eq('id', 1)
+    setBusy(false)
+    if (error) return setStatus({ tone: 'error', text: error.message })
+    setSaved(draft)
+    setUpdatedAt(now)
+    setStatus({ tone: 'ok', text: 'Guardado. El agente lo usará en el próximo análisis.' })
+  }
+
+  if (saved === null && !status) return null
+
+  return (
+    <Card className="space-y-3 p-4">
+      <SectionTitle right={updatedAt && <span className="text-xs text-stone-400">Editado {relativeDate(updatedAt)}</span>}>
+        Mis prioridades (lo que lee el agente)
+      </SectionTitle>
+      <p className="text-xs text-stone-500 dark:text-stone-400">
+        Escribe en lenguaje normal: remitentes VIP, qué es P1 o P2, qué es basura, tus categorías y cuándo crear tareas
+        para el equipo. Solo los administradores ven esto.
+      </p>
+      <textarea
+        className={`${input} w-full font-mono text-xs leading-relaxed`}
+        rows={14}
+        value={draft}
+        onChange={(e) => {
+          setDraft(e.target.value)
+          setStatus(null)
+        }}
+        aria-label="Prioridades del agente"
+      />
+      <div className="flex items-center gap-2">
+        <button className={btnPrimary} disabled={busy || draft === saved} onClick={save}>
+          Guardar prioridades
+        </button>
+        {draft !== saved && (
+          <button className={btn} disabled={busy} onClick={() => setDraft(saved ?? '')}>
+            Descartar cambios
+          </button>
+        )}
+        {status && (
+          <span className={`text-[13px] ${status.tone === 'error' ? 'text-red-600 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+            {status.text}
+          </span>
+        )}
+      </div>
+    </Card>
+  )
 }
 
 export function Reglas() {
@@ -60,6 +134,8 @@ export function Reglas() {
     <div className="space-y-6">
       <h1 className="text-xl font-medium">Cómo reparte el agente</h1>
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
+
+      <PrioritiesEditor />
 
       {settings && (
         <Card className="space-y-4 p-4">
