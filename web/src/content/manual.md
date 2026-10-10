@@ -126,8 +126,12 @@ Algunos detalles de la recomendación:
 ## 7. Hoy
 
 - **Gerente:**
-  - resumen del agente y "Necesita tu atención" (responder hoy, repartos por decidir, vencidas, personas
-    saturadas), donde cada tarjeta lleva a su sección;
+  - **resumen del agente** en tres columnas de color: **P1 · Responder hoy** (rojo), **P2 · Esta semana**
+    (ámbar) y **P3 · Cuando puedas** (gris). Arriba va una frase con lo más importante. Cada pedido muestra qué
+    hay que hacer, quién lo pide, la marca, la fecha ("hoy", "mañana", "venció…"), si te mencionan y un enlace
+    **Abrir** al correo. Abajo: pendientes nuevos, carga del equipo, basura filtrada y correos sospechosos;
+  - "Necesita tu atención" (responder hoy, repartos por decidir, vencidas, personas saturadas), donde cada
+    tarjeta lleva a su sección;
   - bandeja de correos por prioridad: **Crear pendiente** manda el correo a "Desde correos" y **Listo** lo
     marca como respondido;
   - **@ Te mencionan:** en hilos con muchos destinatarios, marca los correos donde te nombraron con @. El

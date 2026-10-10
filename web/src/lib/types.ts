@@ -228,6 +228,31 @@ export interface AgentRun {
   emails_processed: number
   tasks_created: number
   summary: string | null
+  summary_data: SummaryData | null
+}
+
+export interface SummaryItem {
+  title: string
+  detail?: string | null
+  from?: string | null
+  brand?: string | null
+  due?: string | null
+  mentioned?: boolean
+  gmail_message_id?: string | null
+}
+
+export interface SummaryData {
+  headline?: string | null
+  p1?: SummaryItem[]
+  p2?: SummaryItem[]
+  p3?: SummaryItem[]
+  p1_total?: number
+  p2_total?: number
+  p3_total?: number
+  pendientes?: { title: string; brand?: string | null; recommended?: string | null }[]
+  equipo?: string | null
+  junk?: number | null
+  suspicious?: string[]
 }
 
 export interface Settings {

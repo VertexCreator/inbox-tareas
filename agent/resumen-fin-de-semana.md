@@ -150,12 +150,43 @@ Escribe un resumen en español para leerlo el lunes por la mañana. Respeta qué
   and created_at > now() - interval '1 day'`; en fin de semana, desde el viernes).
 - Cualquier correo sospechoso.
 
+**Además del texto, arma `summary_data`** (es lo que el dashboard dibuja en tarjetas por prioridad).
+Separa por prioridad **todos los correos que piden algo** de esta corrida y los P1/P2 que sigan pendientes de
+corridas anteriores (`select ... from public.emails where status = 'pendiente' and priority in ('P1','P2')`).
+
+- `headline`: **una** frase con lo más importante, empezando por un verbo ("Confirma hoy el presupuesto de
+  Vaseline; el resto puede esperar a mañana.").
+- `p1`, `p2`, `p3`: una entrada por correo o pedido, de la más urgente a la menos.
+  - `title`: qué hay que hacer, en 3 a 8 palabras, empezando por un verbo ("Confirmar presupuesto de Vaseline").
+  - `detail`: quién lo pide y lo esencial, en máximo 15 palabras.
+  - `from`, `brand` (nombre exacto de la marca o `null`), `due` (`YYYY-MM-DD` o `null`), `mentioned` (`true` si
+    la mencionaron) y `gmail_message_id`.
+- Cuántas entradas por prioridad, según el largo del "Formato del resumen": corto 3, normal 5, detallado 8.
+  Si hay más, pon las más urgentes y el total real en `p1_total`, `p2_total` y `p3_total`.
+- `pendientes`: pendientes nuevos, como `[{ "title", "brand", "recommended" }]`, donde `recommended` es el
+  nombre de la persona recomendada.
+- `equipo`: una frase sobre la carga (quién está saturado), o `null`.
+- `junk`: número de correos basura filtrados.
+- `suspicious`: lista de títulos de correos sospechosos.
+- Omite (con `null` o `[]`) lo que el "Formato del resumen" diga que no incluyas.
+
+`summary` (texto) queda como respaldo: el `headline` y una línea por prioridad.
+
 ```sql
 select public.log_agent_run($json$ {
   "slot": "Fin de semana", "emails_processed": 42, "tasks_created": 3,
-  "summary": "Fin de semana: ..."
+  "summary": "Confirma hoy el presupuesto de Vaseline.\nP1: 1 · P2: 3 · P3: 2",
+  "summary_data": {
+    "headline": "Fin de semana: el lunes empieza por confirmar el presupuesto de Vaseline.",
+    "p1": [{"title": "Confirmar presupuesto de Vaseline", "detail": "Carla Stolk lo pide en un hilo de 5 personas",
+            "from": "Carla Stolk", "brand": "Vaseline", "due": "2026-10-16", "mentioned": true, "gmail_message_id": "..."}],
+    "p2": [], "p3": [], "p1_total": 1, "p2_total": 3, "p3_total": 2,
+    "pendientes": [{"title": "Video de producto TikTok", "brand": "Peros", "recommended": "Diego"}],
+    "equipo": "Ana va al 92% de carga.", "junk": 31, "suspicious": []
+  }
 } $json$::jsonb);
 ```
+
 
 `tasks_created`: cuántos pendientes creaste en el paso 5.
 `slot`: siempre "Fin de semana".

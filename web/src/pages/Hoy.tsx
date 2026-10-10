@@ -7,6 +7,7 @@ import { PRIORITY_ORDER, type Activity, type AgentRun, type Brand, type Email, t
 import { dotClass } from '../components/colors'
 import { BrandChip } from '../components/Initiative'
 import { TaskCard } from '../components/TaskCard'
+import { SummaryBoard } from '../components/SummaryBoard'
 import { Avatar, Card, Empty, LoadBar, PriorityBadge, SectionTitle, Tag, btn, relativeDate } from '../components/ui'
 
 // Horario del análisis: lunes a viernes 8:00, 13:00 y 18:00; domingo 21:00.
@@ -155,14 +156,8 @@ function HoyGerente() {
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
 
-      {run?.summary && (
-        <Card className="p-4">
-          <div className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">
-            ✦ Resumen del agente · {relativeDate(run.ran_at)}
-            {run.slot ? ` (${run.slot})` : ''} · {todayCount} correos hoy
-          </div>
-          <div className="whitespace-pre-line text-[15px] leading-relaxed">{run.summary}</div>
-        </Card>
+      {run && (run.summary || run.summary_data) && (
+        <SummaryBoard run={run} todayCount={todayCount} emails={emails} brands={brands} account={member?.email} onSeeInbox={() => scrollTo('bandeja')} />
       )}
 
       <section>
