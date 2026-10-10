@@ -67,13 +67,43 @@ Con esta forma, para actualizar hay que volver a descargar el ZIP.
 > El agente no necesita estos archivos para funcionar: todo lo que usa está en Supabase. Sirven para
 > tener las instrucciones a mano y para que Claude cree las tareas programadas.
 
-## Paso 3 · App de Claude y conectores
+## Paso 3 · Script de Gmail (Apps Script)
+Revisa Gmail cada 15 minutos, filtra la basura y deja el resto limpio en Supabase, para que Claude gaste
+muchos menos tokens. Corre en la nube de Google: se instala una vez, desde el navegador de cualquier
+computadora, y sigue funcionando aunque la computadora esté apagada.
+
+1. Entra a [script.google.com](https://script.google.com) con **sgomez@dimassicorp.com** → **Proyecto nuevo**.
+   Ponle de nombre `Inbox Tareas · Ingesta`.
+2. Borra el contenido de `Código.gs` y pega **todo** el contenido de [`apps-script/Code.gs`](apps-script/Code.gs). Guarda (⌘S).
+3. ⚙ **Configuración del proyecto** → **Propiedades del script** → **Agregar propiedad del script**, tres veces:
+
+   | Propiedad | Valor |
+   |---|---|
+   | `SUPABASE_URL` | `https://ddqpbbktcoznkifwyoiy.supabase.co` |
+   | `SUPABASE_KEY` | la publishable key (`sb_publishable_…`, la misma de Vercel) |
+   | `INGEST_SECRET` | dashboard → **Reglas → Script de Gmail → Copiar** |
+
+   Guarda las propiedades.
+4. Vuelve al editor (`< >`), elige la función **`instalar`** en el menú de arriba y pulsa **Ejecutar**.
+5. Google pide permisos: **Revisar permisos** → tu cuenta → si aparece "Google no verificó esta app",
+   **Configuración avanzada → Ir a Inbox Tareas · Ingesta** → **Permitir**. Es tu propio script; pide
+   leer Gmail y conectarse a Supabase.
+6. En el **Registro de ejecución** debe aparecer `Revisados N · a la cola X · basura Y`.
+   En el dashboard → **Reglas → Script de Gmail** aparece "Último envío hace unos segundos".
+
+Para pausarlo: ejecuta la función `desinstalar`. Si regeneras la clave en el dashboard, actualiza
+`INGEST_SECRET` en las propiedades del script.
+
+> La primera vez revisa las últimas 24 horas; después, solo lo nuevo. Los remitentes VIP y de basura se
+> editan en el dashboard → **Reglas → Filtros del script de Gmail**.
+
+## Paso 4 · App de Claude y conectores
 1. Instala la app de escritorio de Claude desde [claude.com/download](https://claude.com/download) y entra con **la misma cuenta**.
 2. Ve a **Ajustes → Conectores** y revisa que estén **Gmail** y **Supabase**.
    - Van con la cuenta, así que deberían aparecer. Si alguno falta o pide reconectar, conéctalo.
    - En Gmail, la cuenta conectada debe ser **sgomez@dimassicorp.com**.
 
-## Paso 4 · Crear las tareas programadas
+## Paso 5 · Crear las tareas programadas
 Las tareas programadas se guardan en cada computadora, por eso se crean aquí. Son dos:
 
 | Tarea | Horario | Prompt |
@@ -92,7 +122,8 @@ Los horarios son en la hora de esa computadora.
 app cerrada a esa hora, corre al volver a abrirla. Deja esa computadora encendida en horario laboral y
 sin suspenderse (*Ajustes del Sistema → Batería/Energía*).
 
-## Paso 5 · Comprobar que todo funciona
+## Paso 6 · Comprobar que todo funciona
+- [ ] En **Reglas → Script de Gmail** el último envío tiene menos de 15 minutos.
 - [ ] Las dos tareas aparecen en la lista de tareas programadas y la prueba de "Análisis del inbox" terminó sin errores.
 - [ ] En el dashboard → **Hoy** aparece "Último análisis: …" con el resumen.
 - [ ] Hay correos en "Correos por responder" y, si correspondía, sugerencias de reparto.
@@ -123,6 +154,7 @@ Cada `git push` a `main` vuelve a publicar el dashboard en Vercel.
 | Tareas, equipo, reglas, historial, prioridades, usuarios | ✅ Supabase | |
 | Dashboard | ✅ Vercel | |
 | Código | ✅ GitHub | Descargarlo (paso 2) |
+| Script de Gmail (Apps Script) | ✅ nube de Google | Se instala una vez (paso 3) |
 | Conectores Gmail y Supabase | ✅ cuenta de Claude | Reconectar si lo pide |
-| Tareas programadas (L-V 8 · 13 · 18 + domingo 21) | | ✅ Crearlas (paso 4) |
+| Tareas programadas (L-V 8 · 13 · 18 + domingo 21) | | ✅ Crearlas (paso 5) |
 | `web/.env.local` | | Solo si se desarrolla ahí |

@@ -24,14 +24,17 @@ function HoyAdmin() {
   const [emails, setEmails] = useState<Email[]>([])
   const [todayEmails, setTodayEmails] = useState<Email[]>([])
   const [run, setRun] = useState<AgentRun | null>(null)
+  const [lastIngest, setLastIngest] = useState<string | null | undefined>(undefined)
   const [error, setError] = useState<string | null>(null)
 
   const loadInbox = useCallback(async () => {
-    const [pending, today, lastRun] = await Promise.all([
+    const [pending, today, lastRun, ingest] = await Promise.all([
       supabase.from('emails').select('*').eq('needs_reply', true).eq('status', 'pendiente').limit(200),
       supabase.from('emails').select('*').gte('received_at', startOfToday()).limit(1000),
       supabase.from('agent_runs').select('*').order('ran_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('ingest_state').select('last_ingest_at').eq('id', 1).maybeSingle(),
     ])
+    setLastIngest(ingest.data?.last_ingest_at ?? null)
     const err = pending.error ?? today.error ?? lastRun.error
     setError(err ? err.message : null)
     setEmails(((pending.data ?? []) as Email[]).sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]))
@@ -68,6 +71,14 @@ function HoyAdmin() {
       </div>
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
+
+      {lastIngest !== undefined && (!lastIngest || Date.now() - new Date(lastIngest).getTime() > 2 * 3600 * 1000) && (
+        <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          {lastIngest
+            ? `El script de Gmail no envía correos desde ${relativeDate(lastIngest)}. Revisa el Apps Script (Reglas → Script de Gmail).`
+            : 'El script de Gmail aún no está conectado. Sigue la sección "Script de Gmail" de INSTALACION.md.'}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Metric label="Correos hoy" value={todayEmails.length} />

@@ -4,15 +4,18 @@ Revisa el Gmail del administrador, prioriza qué responder, y convierte los corr
 se reparten en el equipo según especialidad y carga de trabajo. El agente aprende de tus correcciones.
 
 ```
-Gmail ──(Claude con tu plan, L-V 8:00 · 13:00 · 18:00 + domingo 21:00)──► Supabase ◄──► Dashboard (Vercel)
-         clasifica, prioriza, crea borradores         reparto,        Hoy · Tablero ·
-         y tareas                                     reglas, RLS     Equipo · Reglas
+Gmail ──(Apps Script cada 15 min: filtra basura, limpia y recorta)──► Supabase: email_queue
+                                                                          │
+Claude con tu plan (L-V 8:00 · 13:00 · 18:00 + domingo 21:00) ◄───────────┘
+  clasifica la cola, prioriza, crea borradores y tareas ──► Supabase ◄──► Dashboard (Vercel)
+                                                            reparto, RLS   Hoy · Tablero · Equipo · Reglas
 ```
 
 ## Cómo funciona
 
 | Pieza | Dónde | Qué hace |
 |---|---|---|
+| Ingesta | `apps-script/Code.gs` | Google Apps Script en la cuenta de Gmail. Sin IA: separa la basura (Promociones, Social, Foros, lista de basura), limpia y recorta el resto y lo deja en `email_queue`. Ahorra tokens. |
 | Análisis | `agent/analisis-inbox.md` | Prompt de la tarea programada en Claude (conectores Gmail + Supabase). Clasifica, prioriza, crea borradores (nunca envía) y tareas. |
 | Prioridades | Supabase `agent_priorities` | Tus VIPs, temas P1/P2, categorías. Se editan en el dashboard → Reglas. Solo admin. |
 | Reparto | `supabase/migrations/` → `route_task()` | 1) reglas aprendidas, 2) especialista con menos carga, 3) tarea general → menor carga. Pide aprobación si el especialista está saturado o es P1 urgente. |
