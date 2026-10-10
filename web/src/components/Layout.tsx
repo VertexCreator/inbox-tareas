@@ -15,7 +15,6 @@ export function Layout() {
     { to: '/tickets', label: 'Mis tickets' },
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
-    { to: '/ayuda', label: 'Ayuda' },
   ]
 
   return (
@@ -46,6 +45,24 @@ export function Layout() {
               {member?.name}
               {isAdmin ? ' · admin' : ''}
             </span>
+            <NavLink
+              to="/ayuda"
+              title="Manual de uso y preguntas frecuentes"
+              className={({ isActive }) =>
+                `inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition active:scale-95 ${
+                  isActive
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-900'
+                }`
+              }
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" />
+                <path d="M12 17h.01" />
+              </svg>
+              Ayuda
+            </NavLink>
             <ThemeToggle />
             <button className={btn} onClick={() => setChangingPassword((v) => !v)}>
               Contraseña
