@@ -3,7 +3,8 @@
 Guía para dejar funcionando el agente en la computadora nueva (Mac). Usa la **misma cuenta de Claude**.
 
 El dashboard, los datos y el login ya están en la nube (Vercel + Supabase): el equipo solo necesita
-la URL. Esta guía es para la computadora que va a leer el Gmail a las 8:00, 13:00 y 18:00.
+la URL. Esta guía es para la computadora que va a leer el Gmail de lunes a viernes a las 8:00, 13:00 y 18:00,
+y los domingos a las 21:00.
 
 ---
 
@@ -64,7 +65,7 @@ cd ~/inbox-tareas && git pull
 Con esta forma, para actualizar hay que volver a descargar el ZIP.
 
 > El agente no necesita estos archivos para funcionar: todo lo que usa está en Supabase. Sirven para
-> tener las instrucciones a mano y para que Claude cree la tarea programada.
+> tener las instrucciones a mano y para que Claude cree las tareas programadas.
 
 ## Paso 3 · App de Claude y conectores
 1. Instala la app de escritorio de Claude desde [claude.com/download](https://claude.com/download) y entra con **la misma cuenta**.
@@ -72,23 +73,27 @@ Con esta forma, para actualizar hay que volver a descargar el ZIP.
    - Van con la cuenta, así que deberían aparecer. Si alguno falta o pide reconectar, conéctalo.
    - En Gmail, la cuenta conectada debe ser **sgomez@dimassicorp.com**.
 
-## Paso 4 · Crear la tarea programada
-Las tareas programadas se guardan en cada computadora, por eso se crean aquí.
+## Paso 4 · Crear las tareas programadas
+Las tareas programadas se guardan en cada computadora, por eso se crean aquí. Son dos:
+
+| Tarea | Horario | Prompt |
+|---|---|---|
+| Análisis del inbox | `0 8,13,18 * * 1-5` → lunes a viernes, 8:00, 13:00 y 18:00 | `agent/analisis-inbox.md` |
+| Resumen del fin de semana | `0 21 * * 0` → domingos, 21:00 | `agent/resumen-fin-de-semana.md` |
+
+Los horarios son en la hora de esa computadora.
 
 1. En la app de Claude abre la pestaña **Code** y elige la carpeta `inbox-tareas`.
 2. Escribe exactamente:
-   > Lee INSTALACION.md y agent/analisis-inbox.md. Crea la tarea programada "Análisis del inbox" con el horario 0 8,13,18 * * * y como prompt el contenido completo de agent/analisis-inbox.md. Después ejecútala una vez para probar.
-3. Revisa que la tarea quede así:
-   - **Nombre:** Análisis del inbox
-   - **Horario:** `0 8,13,18 * * *` → todos los días a las 8:00, 13:00 y 18:00 (hora de esa computadora)
-   - **Prompt:** el contenido de `agent/analisis-inbox.md`
+   > Lee INSTALACION.md, agent/analisis-inbox.md y agent/resumen-fin-de-semana.md. Crea dos tareas programadas: "Análisis del inbox" con el horario 0 8,13,18 * * 1-5 y como prompt el contenido completo de agent/analisis-inbox.md, y "Resumen del fin de semana" con el horario 0 21 * * 0 y como prompt el contenido completo de agent/resumen-fin-de-semana.md. Después ejecuta una vez solo "Análisis del inbox" para probar.
+3. Revisa que las dos tareas queden con el nombre, horario y prompt de la tabla.
 
 **Importante:** la tarea corre solo con la app de Claude abierta. Si la computadora está apagada o la
 app cerrada a esa hora, corre al volver a abrirla. Deja esa computadora encendida en horario laboral y
 sin suspenderse (*Ajustes del Sistema → Batería/Energía*).
 
 ## Paso 5 · Comprobar que todo funciona
-- [ ] La tarea aparece en la lista de tareas programadas y la prueba terminó sin errores.
+- [ ] Las dos tareas aparecen en la lista de tareas programadas y la prueba de "Análisis del inbox" terminó sin errores.
 - [ ] En el dashboard → **Hoy** aparece "Último análisis: …" con el resumen.
 - [ ] Hay correos en "Correos por responder" y, si correspondía, sugerencias de reparto.
 - [ ] En Gmail hay borradores para los correos P1 (nunca se envía nada solo).
@@ -119,5 +124,5 @@ Cada `git push` a `main` vuelve a publicar el dashboard en Vercel.
 | Dashboard | ✅ Vercel | |
 | Código | ✅ GitHub | Descargarlo (paso 2) |
 | Conectores Gmail y Supabase | ✅ cuenta de Claude | Reconectar si lo pide |
-| Tarea programada 8 · 13 · 18 | | ✅ Crearla (paso 4) |
+| Tareas programadas (L-V 8 · 13 · 18 + domingo 21) | | ✅ Crearlas (paso 4) |
 | `web/.env.local` | | Solo si se desarrolla ahí |

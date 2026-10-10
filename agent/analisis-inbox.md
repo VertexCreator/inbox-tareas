@@ -1,7 +1,7 @@
 # Análisis del inbox (instrucciones para Claude)
 
 Este es el prompt de la tarea programada que corre con el plan Claude del administrador
-a las 8:00, 13:00 y 18:00. Necesita dos conectores activos en esa sesión: **Gmail** y **Supabase**.
+de lunes a viernes a las 8:00, 13:00 y 18:00. Necesita dos conectores activos en esa sesión: **Gmail** y **Supabase**.
 No depende de archivos locales: todo lo que necesita está en Supabase.
 
 - Proyecto de Supabase: `ddqpbbktcoznkifwyoiy` (inbox-tareas)
@@ -102,6 +102,9 @@ select public.log_agent_run($json$ {
   "summary": "..."
 } $json$::jsonb);
 ```
+
+`slot`: usa el horario programado de esta corrida ("08:00", "13:00" o "18:00"), según la hora actual
+redondeada al más cercano. No copies el valor del ejemplo.
 
 ### 7. Aviso
 Termina con un mensaje corto: "X correos nuevos · Y por responder (Z P1) · W tareas sugeridas.

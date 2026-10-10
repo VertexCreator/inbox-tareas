@@ -4,7 +4,7 @@ Revisa el Gmail del administrador, prioriza qué responder, y convierte los corr
 se reparten en el equipo según especialidad y carga de trabajo. El agente aprende de tus correcciones.
 
 ```
-Gmail ──(Claude con tu plan, 8:00 · 13:00 · 18:00)──► Supabase ◄──► Dashboard (Vercel)
+Gmail ──(Claude con tu plan, L-V 8:00 · 13:00 · 18:00 + domingo 21:00)──► Supabase ◄──► Dashboard (Vercel)
          clasifica, prioriza, crea borradores         reparto,        Hoy · Tablero ·
          y tareas                                     reglas, RLS     Equipo · Reglas
 ```
@@ -82,6 +82,7 @@ Cada `git push` a `main` vuelve a publicar solo. Vercel solo sirve la página: l
 en las pantallas de todos.
 
 ### 5. Agente (con tu plan de Claude)
+Horario: L-V 8:00 · 13:00 · 18:00 + domingo 21:00 (resumen del fin de semana).
 Sigue [INSTALACION.md](INSTALACION.md) en la computadora que va a correr el agente.
 
 ## Base de datos
