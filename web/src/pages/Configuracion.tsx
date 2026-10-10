@@ -545,6 +545,10 @@ function BrandsStickers() {
     <div className="space-y-4">
       <Card className="p-4">
         <SectionTitle>Marcas</SectionTitle>
+        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+          Los alias ayudan al agente a reconocer la marca en los correos: dominios del cliente (@peros.cl), nombres de productos o
+          como la mencionan. Si el agente detecta una marca que no existe, la verás sugerida en Listas para crearla con un clic.
+        </p>
         {brands.length === 0 && <p className="text-sm text-stone-500">Crea marcas desde el Tablero con "+ Marca".</p>}
         <div className="divide-y divide-stone-200 dark:divide-stone-800">
           {brands.map((b) => (
@@ -560,6 +564,15 @@ function BrandsStickers() {
               <button className={`${btn} ml-auto`} onClick={() => updateBrand(b, { archived: !b.archived })}>
                 {b.archived ? 'Reactivar' : 'Archivar'}
               </button>
+              <div className="basis-full">
+                <TagInput
+                  id={`aliases-${b.id}`}
+                  values={b.aliases ?? []}
+                  onChange={(v) => updateBrand(b, { aliases: v })}
+                  normalize={(v) => v.toLowerCase()}
+                  placeholder="Alias: @dominio.com, nombre de producto, cómo la llaman los clientes…"
+                />
+              </div>
             </div>
           ))}
         </div>

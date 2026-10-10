@@ -44,7 +44,7 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
     join public.team_members m on m.id = l.member_id
     where l.mode = 'corregida' order by l.created_at desc limit 30;
   select last_ingest_at, last_queued, last_junk from public.ingest_state;
-  select name from public.brands where not archived order by name;
+  select name, aliases from public.brands where not archived order by name;
   ```
   Las correcciones muestran qué especialidad debió tener cada tarea: úsalas para clasificar
   mejor las nuevas.
@@ -72,6 +72,15 @@ Para cada uno decide:
 - `needs_reply`: true si espera una respuesta tuya.
 - `summary`: una línea en español, qué piden y para cuándo.
 - `reply_by`: fecha `YYYY-MM-DD` si el correo menciona un plazo.
+- **Marca** (`brand` o `suggested_brand`): deduce de qué marca habla el correo. Pistas, en este orden:
+  1. el dominio del remitente o de las personas en copia, comparado con los alias (`@peros.cl`);
+  2. nombres de marca o de producto en el asunto, el cuerpo, los adjuntos o la firma;
+  3. el contexto del hilo, por ejemplo una agencia que escribe "para Asperox".
+
+  Si coincide con una marca de la lista (por nombre o alias), pon `"brand": "Nombre exacto"`. Si es claramente
+  una marca que el equipo maneja pero **no está en la lista**, pon `"suggested_brand": "Nombre"`: el gerente la
+  verá sugerida y la creará con un clic. Si el correo no es de una marca (banco, proveedor interno, notificación),
+  no pongas ninguna. Si menciona varias, elige la principal.
 
 Registra **cada** correo de la cola (la basura ya la registró el script):
 ```sql
@@ -80,7 +89,7 @@ select public.ingest_email($json$ {
   "from_name": "...", "from_email": "...", "subject": "...",
   "summary": "...", "category": "Clientes", "priority": "P1",
   "needs_reply": true, "reply_by": "2026-10-12", "received_at": "2026-10-10T09:15:00Z",
-  "draft_created": false
+  "draft_created": false, "brand": "Peros"
 } $json$::jsonb);
 ```
 
@@ -108,8 +117,7 @@ select public.create_item_from_email($json$ {
   "brand": "Peros"
 } $json$::jsonb);
 ```
-- `brand`: la marca a la que se refiere el correo, **exactamente** como aparece en la lista de marcas del
-  paso 1. Si no está claro, omítelo (el gerente la elige al planificar).
+- `brand` / `suggested_brand`: la misma marca que dedujiste en el paso 3 (si no pones nada, se usa la del correo).
 - Usa en el título palabras del tipo de trabajo (campaña, newsletter, evento, nota de prensa, blog…): así la
   base elige la plantilla correcta.
 - `due_date`: la fecha que pide el correo; si no hay, déjala vacía (la base usa 14 días).

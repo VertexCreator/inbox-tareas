@@ -25,6 +25,7 @@ export interface Brand {
   name: string
   color: string
   archived: boolean
+  aliases: string[]
 }
 
 export type StickerCategory = 'abierto' | 'en_curso' | 'terminado' | 'cancelado'
@@ -99,6 +100,7 @@ export interface ListItem {
   email_id: string | null
   created_by: string | null
   brand_id: string | null
+  suggested_brand: string | null
   created_at: string
 }
 
@@ -194,6 +196,8 @@ export interface Email {
   reply_by: string | null
   status: 'pendiente' | 'respondido' | 'archivado'
   received_at: string | null
+  brand_id: string | null
+  suggested_brand: string | null
 }
 
 export interface Rule {

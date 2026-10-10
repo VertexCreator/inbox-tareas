@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import {
   addSubtask,
@@ -432,3 +433,62 @@ export function SubtaskEditor({
   )
 }
 
+
+// Marca que el agente dedujo del correo y aún no existe (o no se asignó). El gerente la crea o la asigna con un clic.
+export function SuggestedBrand({
+  itemId,
+  name,
+  brands,
+  isAdmin,
+  onAccepted,
+}: {
+  itemId: string
+  name: string
+  brands: Brand[]
+  isAdmin: boolean
+  onAccepted?: (brandId: string) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const existing = brands.find((b) => !b.archived && (b.name.toLowerCase() === name.trim().toLowerCase() || b.aliases?.some((a) => a.toLowerCase() === name.trim().toLowerCase())))
+
+  const accept = async () => {
+    setBusy(true)
+    setError(null)
+    if (existing) {
+      const { error } = await supabase.from('list_items').update({ brand_id: existing.id }).eq('id', itemId)
+      setBusy(false)
+      if (error) return setError(error.message)
+      return onAccepted?.(existing.id)
+    }
+    const { data, error } = await supabase.rpc('accept_suggested_brand', { p_item_id: itemId })
+    setBusy(false)
+    if (error) return setError(error.message)
+    onAccepted?.(data as string)
+  }
+
+  const dismiss = async () => {
+    const { error } = await supabase.from('list_items').update({ suggested_brand: null }).eq('id', itemId)
+    if (error) setError(error.message)
+    else onAccepted?.('')
+  }
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <span className="rounded border border-dashed border-violet-300 px-1.5 py-0.5 text-[10px] text-violet-700 dark:border-violet-700 dark:text-violet-300" title="Marca que el agente dedujo del correo">
+        ✦ ¿Marca: {name}?
+      </span>
+      {isAdmin && (
+        <>
+          <button className="rounded px-1.5 py-0.5 text-[10px] font-medium text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950" onClick={accept} disabled={busy}>
+            {existing ? `Asignar ${existing.name}` : 'Crear y asignar'}
+          </button>
+          <button className="px-1 text-[10px] text-stone-400 hover:text-stone-700" onClick={dismiss} aria-label="Descartar marca sugerida">
+            ×
+          </button>
+        </>
+      )}
+      {error && <span className="text-[11px] text-red-600">{error}</span>}
+    </span>
+  )
+}

@@ -97,6 +97,14 @@ Es tu lista personal de trabajo.
 Mientras no esté planificado, puedes borrar tu propio pendiente. La lista **Desde correos** la llena el agente
 con lo que detecta en el inbox del gerente.
 
+**Marca sugerida:** el agente deduce la marca de cada correo por el dominio del remitente, los productos o la
+firma.
+
+- Si la marca ya existe, la asigna sola.
+- Si no existe, verás **✦ ¿Marca: X?** en el pendiente. El gerente pulsa **Crear y asignar** (o **Asignar**, si
+  ya existe con otro nombre) y la marca queda puesta en ese pendiente y en todos los que la sugerían.
+- La **×** descarta la sugerencia.
+
 **El gerente** convierte los pendientes en iniciativas:
 
 1. **Planificar:** el dashboard propone al instante una iniciativa con subtareas. Usa la plantilla que mejor
@@ -140,7 +148,7 @@ Algunos detalles de la recomendación:
 | Pestaña | Para qué |
 |---|---|
 | Prioridades y resumen | Qué es P1, P2 o basura en los correos, categorías y qué incluye el resumen del día. |
-| Marcas y stickers | Nombre y color de cada marca (o archivarla); nombre, color, orden y forma de contar de cada sticker. |
+| Marcas y stickers | Nombre, color y **alias** de cada marca (dominios del cliente, productos) para que el agente la reconozca en los correos; archivar marcas; nombre, color, orden y forma de contar de cada sticker. |
 | Plantillas | Subtareas típicas de cada tipo de trabajo, palabras que activan cada plantilla y lo que aprendió de tus cambios. |
 | Habilidades | Catálogo de habilidades para perfiles y plantillas. |
 | Script de Gmail | Remitentes VIP y basura, y estado del script que lee el correo. |

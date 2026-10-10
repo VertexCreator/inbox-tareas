@@ -3,6 +3,7 @@ import { memberName, memberOption, shortDate } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Brand, ListItem, Member, PlanRecommendation, PlanTemplate, Priority, Proposal, ProposalSubtask } from '../lib/types'
 import { Tag, btn, btnPrimary, input } from './ui'
+import { SuggestedBrand } from './Initiative'
 
 interface Props {
   item: ListItem
@@ -193,6 +194,11 @@ export function PlanPanel({ item, brands, members, templates, skills, onClose, o
                 </option>
               ))}
           </select>
+          {!draft.brand_id && !item.brand_id && item.suggested_brand && (
+            <span className="block pt-1">
+              <SuggestedBrand itemId={item.id} name={item.suggested_brand} brands={brands} isAdmin onAccepted={(id) => id && set({ brand_id: id })} />
+            </span>
+          )}
         </label>
         <label className="space-y-1 text-xs">
           <span className="block text-stone-500 dark:text-stone-400">Habilidad principal</span>

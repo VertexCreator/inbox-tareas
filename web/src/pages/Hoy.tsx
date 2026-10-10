@@ -5,6 +5,7 @@ import { gmailThreadUrl, isOverdue, memberName, progress, shortDate, todayISO, u
 import { supabase } from '../lib/supabase'
 import { PRIORITY_ORDER, type Activity, type AgentRun, type Brand, type Email, type Member, type Sticker, type Subtask, type Task } from '../lib/types'
 import { dotClass } from '../components/colors'
+import { BrandChip } from '../components/Initiative'
 import { TaskCard } from '../components/TaskCard'
 import { Avatar, Card, Empty, LoadBar, PriorityBadge, SectionTitle, Tag, btn, relativeDate } from '../components/ui'
 
@@ -125,6 +126,8 @@ function HoyGerente() {
       priority: e.priority === 'ninguna' ? null : e.priority,
       due_date: e.reply_by,
       email_id: e.id,
+      brand_id: e.brand_id,
+      suggested_brand: e.brand_id ? null : e.suggested_brand,
     })
     if (error) setError(error.message)
     else setCreated((c) => [...c, e.id])
@@ -202,6 +205,7 @@ function HoyGerente() {
                       <EmailRow
                         key={e.id}
                         email={e}
+                        brands={brands}
                         account={member?.email}
                         created={created.includes(e.id)}
                         onDone={() => markEmail(e.id)}
@@ -337,12 +341,14 @@ function Group({ priority, count, defaultOpen, children }: { priority: 'P1' | 'P
 
 function EmailRow({
   email: e,
+  brands,
   account,
   created,
   onDone,
   onPending,
 }: {
   email: Email
+  brands: Brand[]
   account?: string
   created: boolean
   onDone: () => void
@@ -360,6 +366,15 @@ function EmailRow({
         {e.summary && <div className="text-xs text-stone-500 dark:text-stone-400">{e.summary}</div>}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
+        {e.brand_id ? (
+          <BrandChip brand={brands.find((b) => b.id === e.brand_id)} />
+        ) : (
+          e.suggested_brand && (
+            <span className="rounded border border-dashed border-violet-300 px-1.5 py-0.5 text-[10px] text-violet-700 dark:border-violet-700 dark:text-violet-300">
+              ✦ ¿Marca: {e.suggested_brand}?
+            </span>
+          )
+        )}
         {e.draft_created && <Tag tone="accent">Borrador listo</Tag>}
         {e.reply_by && <Tag tone="warning">antes del {shortDate(e.reply_by)}</Tag>}
         {created ? (

@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, shortDate, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Brand, ItemStatus, ListItem, ListRow, PlanTemplate, Priority } from '../lib/types'
-import { BrandChip } from '../components/Initiative'
+import { BrandChip, SuggestedBrand } from '../components/Initiative'
 import { PlanPanel } from '../components/PlanPanel'
 import { Avatar, Card, Empty, PriorityBadge, btn, btnPrimary, input } from '../components/ui'
 
@@ -141,6 +141,9 @@ export function Listas() {
                     <div className="flex items-center gap-2">
                       {item.priority && <PriorityBadge priority={item.priority} />}
                       {item.brand_id && <BrandChip brand={brands.find((b) => b.id === item.brand_id)} />}
+                      {!item.brand_id && item.suggested_brand && (
+                        <SuggestedBrand itemId={item.id} name={item.suggested_brand} brands={brands} isAdmin={isAdmin} onAccepted={() => { load(); reloadBoard() }} />
+                      )}
                       <span className={`truncate font-medium ${item.status === 'descartado' ? 'text-stone-400 line-through' : ''}`}>{item.title}</span>
                     </div>
                     {item.notes && <div className="truncate text-xs text-stone-500 dark:text-stone-400">{item.notes}</div>}
