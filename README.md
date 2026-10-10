@@ -11,6 +11,8 @@ Claude con tu plan (L-V 8:00 · 13:00 · 18:00 + domingo 21:00) ◄────�
                                                             reparto, RLS   Hoy · Listas · Tablero · Equipo · Configuración
 ```
 
+**Manual de uso para el equipo:** [web/src/content/manual.md](web/src/content/manual.md) (también en el dashboard → **Ayuda**).
+
 ## Cómo funciona
 
 | Pieza | Dónde | Qué hace |

@@ -2,7 +2,14 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    
+    <script>
+      // Aplica el tema antes de pintar, para que no parpadee al cargar.
+      try {
+        var t = localStorage.getItem('tema')
+        if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        document.documentElement.classList.toggle('dark', t === 'dark')
+      } catch (e) {}
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Inbox Tareas</title>
   </head>

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { googleLoginEnabled } from '../lib/supabase'
 import { Card, btn, btnPrimary, input } from '../components/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 
 export function Login() {
   const { signInWithPassword, signInWithGoogle } = useAuth()
@@ -21,6 +22,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
+      <ThemeToggle className="fixed right-4 top-4" />
       <Card className="w-full max-w-sm p-6">
         <div className="text-center">
           <div className="text-lg font-medium">Inbox → Tareas</div>

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { ChangePassword } from '../pages/Login'
 import { btn } from './ui'
+import { ThemeToggle } from './ThemeToggle'
 
 export function Layout() {
   const { member, isAdmin, signOut } = useAuth()
@@ -14,6 +15,7 @@ export function Layout() {
     { to: '/tickets', label: 'Mis tickets' },
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
+    { to: '/ayuda', label: 'Ayuda' },
   ]
 
   return (
@@ -44,6 +46,7 @@ export function Layout() {
               {member?.name}
               {isAdmin ? ' · admin' : ''}
             </span>
+            <ThemeToggle />
             <button className={btn} onClick={() => setChangingPassword((v) => !v)}>
               Contraseña
             </button>
