@@ -64,6 +64,7 @@ function HoyGerente() {
   const [emails, setEmails] = useState<Email[]>([])
   const [todayCount, setTodayCount] = useState(0)
   const [run, setRun] = useState<AgentRun | null>(null)
+  const [prevRun, setPrevRun] = useState<AgentRun | null>(null)
   const [lastIngest, setLastIngest] = useState<string | null | undefined>(undefined)
   const [threshold, setThreshold] = useState(0.9)
   const [openPlans, setOpenPlans] = useState<{ id: string; title: string }[]>([])
@@ -75,7 +76,7 @@ function HoyGerente() {
     const [pending, today, lastRun, ingest, settings, plans] = await Promise.all([
       supabase.from('emails').select('*').eq('status', 'pendiente').neq('priority', 'ninguna').order('received_at', { ascending: false }).limit(200),
       supabase.from('emails').select('id', { count: 'exact', head: true }).gte('received_at', startOfToday().toISOString()),
-      supabase.from('agent_runs').select('*').order('ran_at', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('agent_runs').select('*').order('ran_at', { ascending: false }).limit(2),
       supabase.from('ingest_state').select('last_ingest_at').eq('id', 1).maybeSingle(),
       supabase.from('settings').select('saturation_threshold').eq('id', 1).maybeSingle(),
       supabase.from('list_items').select('id, title').eq('status', 'planificando').order('created_at'),
@@ -84,7 +85,9 @@ function HoyGerente() {
     setError(err ? err.message : null)
     setEmails((pending.data ?? []) as Email[])
     setTodayCount(today.count ?? 0)
-    setRun(lastRun.data as AgentRun | null)
+    const runs = (lastRun.data ?? []) as AgentRun[]
+    setRun(runs[0] ?? null)
+    setPrevRun(runs[1] ?? null)
     setLastIngest(ingest.data?.last_ingest_at ?? null)
     setThreshold(Number(settings.data?.saturation_threshold ?? 0.9))
     setOpenPlans((plans.data ?? []) as { id: string; title: string }[])
@@ -156,9 +159,18 @@ function HoyGerente() {
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
 
-      {run && (run.summary || run.summary_data) && (
-        <SummaryBoard run={run} todayCount={todayCount} emails={emails} brands={brands} account={member?.email} onSeeInbox={() => scrollTo('bandeja')} />
-      )}
+      <SummaryBoard
+        run={run}
+        prevRun={prevRun}
+        todayCount={todayCount}
+        emails={emails}
+        brands={brands}
+        account={member?.email}
+        created={created}
+        onDone={markEmail}
+        onPending={toPending}
+        onSeeInbox={() => scrollTo('bandeja')}
+      />
 
       <section>
         <div className="mb-2 text-xs text-stone-500 dark:text-stone-400">Necesita tu atención</div>
