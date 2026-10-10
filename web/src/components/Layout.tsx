@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { ChangePassword } from '../pages/Login'
 import { btn } from './ui'
 
 export function Layout() {
   const { member, isAdmin, signOut } = useAuth()
+  const [changingPassword, setChangingPassword] = useState(false)
   const links = [
     { to: '/', label: 'Hoy' },
     { to: '/tablero', label: 'Tablero' },
@@ -39,6 +42,9 @@ export function Layout() {
               {member?.name}
               {isAdmin ? ' · admin' : ''}
             </span>
+            <button className={btn} onClick={() => setChangingPassword((v) => !v)}>
+              Contraseña
+            </button>
             <button className={btn} onClick={signOut}>
               Salir
             </button>
@@ -46,6 +52,11 @@ export function Layout() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
+        {changingPassword && (
+          <div className="mb-6 flex justify-end">
+            <ChangePassword forced={false} onDone={() => setChangingPassword(false)} />
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

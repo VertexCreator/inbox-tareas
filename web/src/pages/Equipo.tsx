@@ -39,6 +39,7 @@ export function Equipo() {
   const { members, tasks, reload, error } = useBoard()
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [accessFor, setAccessFor] = useState<string | null>(null)
 
   const active = members.filter((m) => m.active)
   const inactive = members.filter((m) => !m.active)
@@ -103,7 +104,15 @@ export function Equipo() {
                 />
               </div>
             ) : (
-              <MemberRow m={m} doneCount={tasks.filter((t) => t.assignee_id === m.id && t.status === 'hecho').length} onEdit={isAdmin ? () => setEditing(m.id) : undefined} />
+              <>
+                <MemberRow
+                  m={m}
+                  doneCount={tasks.filter((t) => t.assignee_id === m.id && t.status === 'hecho').length}
+                  onEdit={isAdmin ? () => setEditing(m.id) : undefined}
+                  onAccess={isAdmin ? () => setAccessFor(accessFor === m.id ? null : m.id) : undefined}
+                />
+                {accessFor === m.id && <AccessForm m={m} onClose={() => setAccessFor(null)} />}
+              </>
             )}
           </div>
         ))}
@@ -132,7 +141,17 @@ export function Equipo() {
   )
 }
 
-function MemberRow({ m, doneCount, onEdit }: { m: Member; doneCount: number; onEdit?: () => void }) {
+function MemberRow({
+  m,
+  doneCount,
+  onEdit,
+  onAccess,
+}: {
+  m: Member
+  doneCount: number
+  onEdit?: () => void
+  onAccess?: () => void
+}) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 md:grid-cols-[220px_minmax(0,1fr)_auto]">
       <div className="flex min-w-0 items-center gap-3">
@@ -155,9 +174,16 @@ function MemberRow({ m, doneCount, onEdit }: { m: Member; doneCount: number; onE
         <LoadBar ratio={m.load_ratio} />
       </div>
       {onEdit ? (
-        <button className={btn} onClick={onEdit}>
-          Editar
-        </button>
+        <div className="flex gap-1.5">
+          {onAccess && (
+            <button className={btn} onClick={onAccess}>
+              Dar acceso
+            </button>
+          )}
+          <button className={btn} onClick={onEdit}>
+            Editar
+          </button>
+        </div>
       ) : (
         <span />
       )}
@@ -254,5 +280,87 @@ function MemberForm({
         {error && <span className="text-[13px] text-red-600 dark:text-red-400">{error}</span>}
       </div>
     </Card>
+  )
+}
+
+function randomPassword() {
+  const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  const bytes = crypto.getRandomValues(new Uint32Array(12))
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('')
+}
+
+// Crea el usuario (o restablece su contraseña) con una contraseña temporal que el admin le pasa a la persona.
+function AccessForm({ m, onClose }: { m: Member; onClose: () => void }) {
+  const [password, setPassword] = useState(randomPassword)
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const submit = async () => {
+    if (password.length < 8) return setError('Usa al menos 8 caracteres.')
+    setBusy(true)
+    setError(null)
+    const { data, error } = await supabase.functions.invoke('admin-users', { body: { email: m.email, password } })
+    setBusy(false)
+    if (error) {
+      let message = error.message
+      try {
+        message = (await error.context.json()).error ?? message
+      } catch {
+        // la respuesta no era JSON; dejamos el mensaje genérico
+      }
+      return setError(message)
+    }
+    setDone(data?.created ? 'Acceso creado.' : 'Contraseña restablecida.')
+  }
+
+  return (
+    <div className="mx-4 mb-3 space-y-2 rounded-lg bg-stone-50 p-3 text-sm dark:bg-stone-800/60">
+      {done ? (
+        <>
+          <div className="font-medium text-emerald-700 dark:text-emerald-400">{done}</div>
+          <p className="text-stone-600 dark:text-stone-300">
+            Pásale a {m.name} estos datos por un canal privado. Al entrar, el dashboard le pedirá crear su propia
+            contraseña.
+          </p>
+          <div className="rounded-md bg-white p-2 font-mono text-xs dark:bg-stone-900">
+            Correo: {m.email}
+            <br />
+            Contraseña temporal: {password}
+          </div>
+          <button className={btn} onClick={onClose}>
+            Cerrar
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="text-stone-600 dark:text-stone-300">
+            Crea una contraseña temporal para <span className="font-medium">{m.email}</span>. Si ya tenía acceso, se le
+            reemplaza la contraseña.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              className={`${input} w-48 font-mono`}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setError(null)
+              }}
+              aria-label="Contraseña temporal"
+            />
+            <button className={btn} onClick={() => setPassword(randomPassword())} disabled={busy}>
+              Generar otra
+            </button>
+            <button className={btnPrimary} onClick={submit} disabled={busy}>
+              {busy ? 'Guardando…' : 'Dar acceso'}
+            </button>
+            <button className={btn} onClick={onClose} disabled={busy}>
+              Cancelar
+            </button>
+          </div>
+          {error && <div className="text-[13px] text-red-600 dark:text-red-400">{error}</div>}
+        </>
+      )}
+    </div>
   )
 }

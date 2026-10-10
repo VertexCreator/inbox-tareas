@@ -17,7 +17,8 @@ Gmail ──(Claude con tu plan, 8:00 · 13:00 · 18:00)──► Supabase ◄�
 | Prioridades | Supabase `agent_priorities` | Tus VIPs, temas P1/P2, categorías. Se editan en el dashboard → Reglas. Solo admin. |
 | Reparto | `supabase/migrations/` → `route_task()` | 1) reglas aprendidas, 2) especialista con menos carga, 3) tarea general → menor carga. Pide aprobación si el especialista está saturado o es P1 urgente. |
 | Aprendizaje | `reassign_task()` | Al corregir con palabra clave se crea una regla ("instagram" → Ana). |
-| Dashboard | `web/` | React + Vite + Tailwind. Login con Google Workspace. |
+| Dashboard | `web/` | React + Vite + Tailwind. Login con correo y contraseña (Supabase Auth). |
+| Accesos | `supabase/functions/admin-users` | Edge Function: el admin da acceso o restablece contraseñas desde la página Equipo. |
 
 ### Quién ve qué
 - **Admin**: correos, resúmenes del agente, aprobar/corregir repartos, reglas, equipo.
@@ -26,22 +27,35 @@ Gmail ──(Claude con tu plan, 8:00 · 13:00 · 18:00)──► Supabase ◄�
 
 ## Puesta en marcha
 
-### 1. Login con Google Workspace
-1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → crea un proyecto →
-   *Pantalla de consentimiento OAuth* → tipo **Interno** (solo cuentas de tu Workspace).
-2. *Credenciales* → *Crear ID de cliente OAuth* → **Aplicación web**.
-   - URI de redirección autorizado: `https://ddqpbbktcoznkifwyoiy.supabase.co/auth/v1/callback`
-3. En Supabase → *Authentication* → *Sign In / Providers* → **Google**: pega Client ID y Client Secret, activa.
-4. En Supabase → *Authentication* → *URL Configuration*: agrega `http://localhost:5173` y la URL de Vercel
-   a *Redirect URLs*; pon la de Vercel como *Site URL*.
+### 1. Login (Supabase Auth, correo y contraseña)
+1. **Cierra el registro público**: Supabase → *Authentication* → *Sign In / Providers* → desactiva
+   **Allow new users to sign up**. Así solo entra quien el admin da de alta. Deja **Confirm email** activado.
+2. **Tu usuario (una sola vez)**: Supabase → *Authentication* → *Users* → *Add user* → *Create new user*
+   - Correo: `sgomez@dimassicorp.com`, una contraseña tuya, y marca **Auto Confirm User**.
+3. **URLs**: Supabase → *Authentication* → *URL Configuration* → *Site URL* = la URL de Vercel
+   (mientras tanto, `http://localhost:5173`).
 
-### 2. Primer administrador
-Ya creado: `sgomez@dimassicorp.com`. Para agregar otro admin desde el SQL editor de Supabase:
-```sql
-insert into public.team_members (name, email, is_admin, specialties)
-values ('Nombre', 'persona@dimassicorp.com', true, '{}');
-```
-Al resto del equipo agrégalo desde la página **Equipo** (con su correo `@dimassicorp.com`) y desactiva los miembros "(ejemplo)".
+Ya como admin, al resto del equipo le das acceso desde el dashboard:
+**Equipo → Agregar persona** y luego **Dar acceso**. El dashboard genera una contraseña temporal; se la
+pasas por un canal privado y al entrar la persona crea la suya. Si alguien la olvida, **Dar acceso** otra vez
+la restablece. Para quitar el acceso: **Editar → Desactivar**.
+
+<details>
+<summary>Opcional, más adelante: login con Google Workspace</summary>
+
+Requiere que el superadministrador de Google Workspace te dé el rol **Creador de proyectos** en la
+organización `dimassicorp.com`.
+1. Google Cloud → proyecto en la organización `dimassicorp.com` → *Pantalla de consentimiento OAuth* → **Interno**.
+2. *Crear ID de cliente OAuth* → **Aplicación web** → redirección:
+   `https://ddqpbbktcoznkifwyoiy.supabase.co/auth/v1/callback`
+3. Supabase → *Sign In / Providers* → **Google**: Client ID y Secret.
+4. En Vercel (y `web/.env.local`): `VITE_ENABLE_GOOGLE_LOGIN=true`. Aparece el botón "Entrar con Google"
+   junto al de contraseña; las dos formas conviven.
+</details>
+
+### 2. Administradores
+`sgomez@dimassicorp.com` ya es admin. Para hacer admin a otra persona: **Equipo → Editar → Administrador**.
+Desactiva los miembros "(ejemplo)" cuando cargues al equipo real.
 
 ### 3. Dashboard local
 ```bash
@@ -59,8 +73,9 @@ npm run dev
    - `VITE_SUPABASE_URL` = `https://ddqpbbktcoznkifwyoiy.supabase.co`
    - `VITE_SUPABASE_PUBLISHABLE_KEY` = la de `web/.env.local`
    - `VITE_WORKSPACE_DOMAIN` = `dimassicorp.com`
+   - `VITE_ENABLE_GOOGLE_LOGIN` = `false`
 4. *Deploy*. Copia la URL (ej. `inbox-tareas.vercel.app`) a Supabase → *Authentication* → *URL Configuration*
-   (Site URL y Redirect URLs).
+   como *Site URL*.
 
 Cada `git push` a `main` vuelve a publicar solo. Vercel solo sirve la página: los cambios del equipo
 (marcar tareas como completadas, moverlas) se guardan directo en Supabase y aparecen en tiempo real

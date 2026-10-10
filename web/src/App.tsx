@@ -1,19 +1,20 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import { Layout } from './components/Layout'
-import { Login, NoAccess } from './pages/Login'
+import { ChangePassword, Login, NoAccess } from './pages/Login'
 import { Hoy } from './pages/Hoy'
 import { Tablero } from './pages/Tablero'
 import { Equipo } from './pages/Equipo'
 import { Reglas } from './pages/Reglas'
 
 function Gate() {
-  const { session, member, isAdmin, loading, signOut } = useAuth()
+  const { session, member, isAdmin, loading, mustChangePassword, signOut } = useAuth()
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-stone-400">Cargando…</div>
   }
   if (!session) return <Login />
+  if (mustChangePassword) return <ChangePassword forced />
   if (!member) return <NoAccess email={session.user.email ?? ''} onSignOut={signOut} />
 
   return (

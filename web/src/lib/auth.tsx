@@ -14,7 +14,11 @@ interface AuthState {
   member: CurrentMember | null
   isAdmin: boolean
   loading: boolean
-  signIn: () => Promise<void>
+  // true cuando el admin le dio una contraseña temporal y aún no la cambia.
+  mustChangePassword: boolean
+  signInWithPassword: (email: string, password: string) => Promise<string | null>
+  signInWithGoogle: () => Promise<void>
+  changePassword: (password: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -54,7 +58,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
   }, [session?.user.email])
 
-  const signIn = async () => {
+  const signInWithPassword = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
+    if (!error) return null
+    return error.message.includes('Invalid login credentials') ? 'Correo o contraseña incorrectos.' : error.message
+  }
+
+  const changePassword = async (password: string) => {
+    const { data, error } = await supabase.auth.updateUser({ password, data: { password_set: true } })
+    if (error) {
+      return error.message.includes('different from the old')
+        ? 'La nueva contraseña debe ser distinta de la temporal.'
+        : error.message
+    }
+    if (data.user) setSession((s) => (s ? { ...s, user: data.user } : s))
+    return null
+  }
+
+  const signInWithGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -71,7 +92,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, member, isAdmin: member?.is_admin ?? false, loading, signIn, signOut }}
+      value={{
+        session,
+        member,
+        isAdmin: member?.is_admin ?? false,
+        loading,
+        mustChangePassword: session?.user.user_metadata?.password_set === false,
+        signInWithPassword,
+        signInWithGoogle,
+        changePassword,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
