@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, shortDate, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { ItemStatus, ListItem, ListRow, PlanTemplate, Priority } from '../lib/types'
+import type { Brand, ItemStatus, ListItem, ListRow, PlanTemplate, Priority } from '../lib/types'
+import { BrandChip } from '../components/Initiative'
 import { PlanPanel } from '../components/PlanPanel'
 import { Avatar, Card, Empty, PriorityBadge, btn, btnPrimary, input } from '../components/ui'
 
@@ -16,7 +17,7 @@ const STATUS: Record<ItemStatus, { label: string; cls: string }> = {
 
 export function Listas() {
   const { isAdmin, member } = useAuth()
-  const { tasks, subtasks, members, reload: reloadBoard } = useBoard()
+  const { tasks, subtasks, members, brands, reload: reloadBoard } = useBoard()
   const [lists, setLists] = useState<ListRow[]>([])
   const [items, setItems] = useState<ListItem[]>([])
   const [templates, setTemplates] = useState<PlanTemplate[]>([])
@@ -139,6 +140,7 @@ export function Listas() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       {item.priority && <PriorityBadge priority={item.priority} />}
+                      {item.brand_id && <BrandChip brand={brands.find((b) => b.id === item.brand_id)} />}
                       <span className={`truncate font-medium ${item.status === 'descartado' ? 'text-stone-400 line-through' : ''}`}>{item.title}</span>
                     </div>
                     {item.notes && <div className="truncate text-xs text-stone-500 dark:text-stone-400">{item.notes}</div>}
@@ -198,6 +200,7 @@ export function Listas() {
                 {planning === item.id && (
                   <PlanPanel
                     item={item}
+                    brands={brands}
                     members={members}
                     templates={templates}
                     skills={skills}
@@ -215,14 +218,15 @@ export function Listas() {
               </div>
             )
           })}
-          <NewItem listId={current.id} onCreated={load} />
+          <NewItem listId={current.id} brands={brands.filter((b) => !b.archived)} onCreated={load} />
         </Card>
       )}
     </div>
   )
 }
 
-function NewItem({ listId, onCreated }: { listId: string; onCreated: () => void }) {
+function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[]; onCreated: () => void }) {
+  const [brand, setBrand] = useState('')
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [due, setDue] = useState('')
@@ -240,6 +244,7 @@ function NewItem({ listId, onCreated }: { listId: string; onCreated: () => void 
       notes: notes.trim() || null,
       due_date: due || null,
       priority: priority || null,
+      brand_id: brand || null,
     })
     setBusy(false)
     if (error) return setError(error.message)
@@ -264,6 +269,16 @@ function NewItem({ listId, onCreated }: { listId: string; onCreated: () => void 
           }}
         />
         <input className={`${input} w-56`} placeholder="Detalles (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} aria-label="Detalles" />
+        {brands.length > 0 && (
+          <select className={input} value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Marca">
+            <option value="">Marca</option>
+            {brands.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        )}
         <input type="date" className={input} value={due} onChange={(e) => setDue(e.target.value)} aria-label="Fecha límite" />
         <select className={input} value={priority} onChange={(e) => setPriority(e.target.value as Priority | '')} aria-label="Prioridad">
           <option value="">Prioridad</option>

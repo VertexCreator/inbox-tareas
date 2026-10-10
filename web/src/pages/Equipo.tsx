@@ -12,9 +12,10 @@ interface Draft {
   capacity_points: number
   available: boolean
   is_admin: boolean
+  can_own: boolean
 }
 
-const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false }
+const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false, can_own: false }
 
 function useSkills() {
   const [skills, setSkills] = useState<string[]>([])
@@ -36,6 +37,7 @@ function toRow(d: Draft) {
     capacity_points: d.capacity_points,
     available: d.available,
     is_admin: d.is_admin,
+    can_own: d.can_own || d.is_admin,
   }
 }
 
@@ -175,6 +177,7 @@ function MemberRow({
         <div className="min-w-0">
           <div className="truncate text-sm font-medium">
             {m.name} {m.is_admin && <span className="text-xs font-normal text-stone-400">· admin</span>}
+            {m.can_own && !m.is_admin && <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400"> · responsable</span>}
           </div>
           <div className="truncate text-xs text-stone-500 dark:text-stone-400">{m.email}</div>
         </div>
@@ -307,6 +310,10 @@ function MemberForm({
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={d.available} onChange={(e) => set({ available: e.target.checked })} />
           Disponible para tareas nuevas
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={d.can_own || d.is_admin} disabled={d.is_admin} onChange={(e) => set({ can_own: e.target.checked })} />
+          Puede ser responsable de iniciativas
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={d.is_admin} onChange={(e) => set({ is_admin: e.target.checked })} />

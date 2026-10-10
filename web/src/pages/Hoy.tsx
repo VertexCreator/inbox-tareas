@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { gmailThreadUrl, isOverdue, memberName, shortDate, todayISO, useBoard } from '../lib/data'
+import { gmailThreadUrl, isOverdue, memberName, progress, shortDate, todayISO, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import { PRIORITY_ORDER, type Activity, type AgentRun, type Email, type Member, type Subtask, type Task } from '../lib/types'
+import { PRIORITY_ORDER, type Activity, type AgentRun, type Brand, type Email, type Member, type Sticker, type Subtask, type Task } from '../lib/types'
+import { dotClass } from '../components/colors'
 import { TaskCard } from '../components/TaskCard'
 import { Avatar, Card, Empty, LoadBar, PriorityBadge, SectionTitle, Tag, btn, relativeDate } from '../components/ui'
 
@@ -57,7 +58,7 @@ export function Hoy() {
 
 function HoyGerente() {
   const { member } = useAuth()
-  const { tasks, subtasks, members, reload } = useBoard()
+  const { tasks, subtasks, members, brands, stickers, reload } = useBoard()
   const [emails, setEmails] = useState<Email[]>([])
   const [todayCount, setTodayCount] = useState(0)
   const [run, setRun] = useState<AgentRun | null>(null)
@@ -93,10 +94,11 @@ function HoyGerente() {
 
   const today = todayISO()
   const approvals = tasks.filter((t) => t.needs_approval && !t.assignee_id && t.status !== 'hecho')
-  const overdueTasks = tasks.filter((t) => isOverdue(t.due_date, t.status === 'hecho'))
+  const closed = (t?: Task) => t?.status === 'hecho' || t?.status === 'cancelado'
+  const overdueTasks = tasks.filter((t) => isOverdue(t.due_date, closed(t)))
   const overdueSubs = subtasks.filter((s) => {
     const parent = tasks.find((t) => t.id === s.task_id)
-    return isOverdue(s.due_date, s.done || parent?.status === 'hecho')
+    return isOverdue(s.due_date, s.done || closed(parent))
   })
   const active = members.filter((m) => m.active)
   const saturated = active.filter((m) => m.load_ratio >= threshold)
@@ -265,8 +267,9 @@ function HoyGerente() {
 
         <div className="space-y-5">
           <section id="equipo" className="scroll-mt-20">
-            <TeamToday members={active} tasks={tasks} subtasks={subtasks} threshold={threshold} today={today} />
+            <TeamToday members={active} tasks={tasks.filter((t) => t.status !== 'cancelado')} subtasks={subtasks} threshold={threshold} today={today} />
           </section>
+          <BrandProgress brands={brands.filter((b) => !b.archived)} tasks={tasks} stickers={stickers} />
           <ActivityFeed />
         </div>
       </div>
@@ -467,6 +470,39 @@ function TeamToday({
   )
 }
 
+function BrandProgress({ brands, tasks, stickers }: { brands: Brand[]; tasks: Task[]; stickers: Sticker[] }) {
+  if (brands.length === 0) return null
+  return (
+    <Card className="p-4">
+      <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/tablero">Ver tablero</Link>}>Avance por marca</SectionTitle>
+      <div className="space-y-2.5">
+        {brands.map((b) => {
+          const mine = tasks.filter((t) => t.brand_id === b.id)
+          const p = progress(mine, stickers)
+          const late = mine.filter((t) => isOverdue(t.due_date, t.status === 'hecho' || t.status === 'cancelado')).length
+          return (
+            <div key={b.id} className="text-xs">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <span className={`h-2 w-2 rounded-full ${dotClass(b.color)}`} aria-hidden="true" />
+                  {b.name}
+                </span>
+                <span className="tabular-nums text-stone-500">
+                  {p.done}/{p.total}
+                  {late > 0 && <span className="text-red-600 dark:text-red-400"> · {late} vencidas</span>}
+                </span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-stone-100 dark:bg-stone-800">
+                <div className="h-full bg-emerald-500" style={{ width: `${p.pct}%` }} />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+  )
+}
+
 const ACTIVITY_ICON: Record<string, { icon: string; cls: string }> = {
   estado: { icon: '✓', cls: 'text-emerald-600' },
   subtarea: { icon: '✓', cls: 'text-emerald-600' },
@@ -474,6 +510,7 @@ const ACTIVITY_ICON: Record<string, { icon: string; cls: string }> = {
   sugerencia: { icon: '✦', cls: 'text-indigo-600 dark:text-indigo-400' },
   asignacion: { icon: '→', cls: 'text-indigo-600 dark:text-indigo-400' },
   correccion: { icon: '⇄', cls: 'text-amber-600' },
+  observacion: { icon: '💬', cls: 'text-amber-600' },
   pendiente: { icon: '+', cls: 'text-stone-500' },
 }
 
@@ -530,10 +567,10 @@ function HoyMiembro() {
   const today = todayISO()
   const { to } = weekRange()
 
-  const myTasks = tasks.filter((t) => t.assignee_id === member?.id && t.status !== 'hecho')
+  const myTasks = tasks.filter((t) => t.assignee_id === member?.id && t.status !== 'hecho' && t.status !== 'cancelado')
   const mySubs = subtasks.filter((s) => {
     const parent = tasks.find((t) => t.id === s.task_id)
-    return s.assignee_id === member?.id && !s.done && parent && parent.assignee_id !== member?.id && parent.status !== 'hecho'
+    return s.assignee_id === member?.id && !s.done && parent && parent.assignee_id !== member?.id && parent.status !== 'hecho' && parent.status !== 'cancelado'
   })
 
   type Entry = { key: string; due: string | null; node: ReactNode; priority: string }

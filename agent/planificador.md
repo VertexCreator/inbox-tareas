@@ -37,7 +37,7 @@ Si no hay filas, responde solo **"Nada que planificar."** y termina.
 
 ### 2. Contexto del equipo (una vez por corrida)
 ```sql
-select id, name, skill_levels, available, load_ratio, open_tasks, open_subtasks
+select id, name, skill_levels, available, can_own, load_ratio, open_tasks, open_subtasks
 from public.member_load where active order by name;
 select name from public.skills order by name;
 select t.name as plantilla, p.skill, m.name as prefiere
@@ -46,6 +46,7 @@ join public.team_members m on m.id = p.member_id;
 select current_date as hoy;
 ```
 `skill_levels`: 1 básico, 2 intermedio, 3 avanzado. `load_ratio` 0.9 o más = saturado.
+`can_own`: solo estas personas pueden ser **responsable principal** de la iniciativa (las subtareas pueden ir a cualquiera).
 
 ### 3. Afinar cada borrador
 Parte de `proposal` y devuelve **el mismo formato** con estos ajustes:
@@ -65,12 +66,13 @@ Parte de `proposal` y devuelve **el mismo formato** con estos ajustes:
 - **`reason`** (de la tarea y de cada subtarea): una línea en español, por qué esa persona
   ("Copywriting avanzado · carga 40%").
 - **`title`**, **`description`**: puedes mejorar la redacción; la descripción la ve todo el equipo.
-- Mantén `priority`, `effort_points` y `due_date` de la tarea, salvo que las notas indiquen otra cosa.
+- Mantén `priority`, `effort_points`, `due_date` y `brand_id` de la tarea, salvo que las notas indiquen otra cosa.
+- El `assignee_id` principal tiene que tener `can_own = true`; si nadie autorizado encaja, déjalo `null`.
 - **No** incluyas `recommended_id`: la base lo completa con tus responsables.
 
 ```sql
 select public.refine_plan('REC_ID', $json$ {
-  "title": "...", "description": "...", "main_skill": "Redes sociales",
+  "title": "...", "description": "...", "brand_id": "uuid o null", "main_skill": "Redes sociales",
   "assignee_id": "uuid", "reason": "...", "due_date": "2026-10-20", "priority": "P2", "effort_points": 3,
   "subtasks": [
     {"title": "...", "skill": "Copywriting", "assignee_id": "uuid", "due_date": "2026-10-15",

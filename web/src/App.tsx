@@ -7,6 +7,7 @@ import { Tablero } from './pages/Tablero'
 import { Equipo } from './pages/Equipo'
 import { Configuracion } from './pages/Configuracion'
 import { Listas } from './pages/Listas'
+import { Tickets } from './pages/Tickets'
 
 function Gate() {
   const { session, member, isAdmin, loading, mustChangePassword, signOut } = useAuth()
@@ -24,6 +25,7 @@ function Gate() {
         <Route index element={<Hoy />} />
         <Route path="listas" element={<Listas />} />
         <Route path="tablero" element={<Tablero />} />
+        <Route path="tickets" element={<Tickets />} />
         <Route path="equipo" element={<Equipo />} />
         {isAdmin && <Route path="configuracion" element={<Configuracion />} />}
         <Route path="reglas" element={<Navigate to="/configuracion" replace />} />

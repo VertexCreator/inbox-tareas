@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import type { Member, Subtask, Task } from './types'
+import type { Brand, Member, Sticker, Subtask, Task } from './types'
 
 // Tareas, subtareas y equipo juntos: la carga de cada miembro cambia con cada tarea.
 // Se recarga sola cuando alguien del equipo cambia una tarea o subtarea (tiempo real).
@@ -8,16 +8,22 @@ export function useBoard() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [subtasks, setSubtasks] = useState<Subtask[]>([])
   const [members, setMembers] = useState<Member[]>([])
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [stickers, setStickers] = useState<Sticker[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
-    const [t, m, st] = await Promise.all([
+    const [t, m, st, b, sk] = await Promise.all([
       supabase.from('tasks').select('*').order('created_at', { ascending: false }),
       supabase.from('member_load').select('*').order('name'),
       supabase.from('subtasks').select('*').order('position'),
+      supabase.from('brands').select('*').order('name'),
+      supabase.from('status_stickers').select('*').order('position'),
     ])
-    const err = t.error ?? m.error ?? st.error
+    if (b.data) setBrands(b.data as Brand[])
+    if (sk.data) setStickers(sk.data as Sticker[])
+    const err = t.error ?? m.error ?? st.error ?? b.error ?? sk.error
     setError(err ? err.message : null)
     if (t.data) setTasks(t.data as Task[])
     if (st.data) setSubtasks(st.data as Subtask[])
@@ -31,13 +37,15 @@ export function useBoard() {
       .channel('tasks-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => reload())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, () => reload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'brands' }, () => reload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'status_stickers' }, () => reload())
       .subscribe()
     return () => {
       supabase.removeChannel(channel)
     }
   }, [reload])
 
-  return { tasks, subtasks, members, loading, error, reload }
+  return { tasks, subtasks, members, brands, stickers, loading, error, reload }
 }
 
 export async function approveTask(taskId: string) {
@@ -79,7 +87,10 @@ export async function updateSubtask(id: string, patch: Partial<Pick<Subtask, 'do
   if (error) throw new Error(error.message)
 }
 
-export async function updateTask(id: string, patch: Partial<Pick<Task, 'due_date' | 'priority' | 'title' | 'description'>>) {
+export async function updateTask(
+  id: string,
+  patch: Partial<Pick<Task, 'due_date' | 'priority' | 'title' | 'description' | 'sticker_id' | 'observation' | 'brand_id' | 'assignee_id'>>,
+) {
   const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) throw new Error(error.message)
 }
@@ -103,4 +114,28 @@ export function memberOption(m: Member, skill: string | null) {
   const lvl = skill ? m.skill_levels?.[skill] : undefined
   const level = lvl ? ` · ${['', 'básico', 'intermedio', 'avanzado'][lvl]}` : ''
   return `${m.name}${level} · ${Math.round(m.load_ratio * 100)}%`
+}
+
+export async function addSubtask(taskId: string, title: string, position: number, assigneeId: string | null = null, due: string | null = null) {
+  const { error } = await supabase
+    .from('subtasks')
+    .insert({ task_id: taskId, title: title.trim(), position, assignee_id: assigneeId, due_date: due })
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteSubtask(id: string) {
+  const { error } = await supabase.from('subtasks').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
+// Progreso de un conjunto de iniciativas: terminadas sobre las que no están canceladas.
+export function progress(tasks: Task[], stickers: Sticker[]) {
+  const cat = (t: Task) => stickers.find((s) => s.id === t.sticker_id)?.category
+  const live = tasks.filter((t) => cat(t) !== 'cancelado')
+  const done = live.filter((t) => cat(t) === 'terminado').length
+  return { done, total: live.length, pct: live.length ? Math.round((done / live.length) * 100) : 0 }
+}
+
+export function relativeShort(iso: string) {
+  return new Date(iso).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }

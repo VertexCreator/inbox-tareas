@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { memberName, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { LogEntry, PlanTemplate, PrioritiesConfig, Rule, Settings, TemplateItem } from '../lib/types'
+import type { Brand, LogEntry, PlanTemplate, PrioritiesConfig, Rule, Settings, Sticker, StickerCategory, TemplateItem } from '../lib/types'
 import { TagInput } from '../components/TagInput'
+import { ColorPicker } from '../components/ColorPicker'
+import { chipClass } from '../components/colors'
 import { Card, Empty, SectionTitle, Tag, btn, btnPrimary, input, relativeDate } from '../components/ui'
 
 const MODE_LABEL: Record<string, string> = {
@@ -501,8 +503,117 @@ function SkillsCatalog({ skills, onChanged }: { skills: string[]; onChanged: () 
   )
 }
 
+
+const CATEGORY_LABEL: Record<StickerCategory, string> = {
+  abierto: 'Sin empezar',
+  en_curso: 'En curso',
+  terminado: 'Terminado',
+  cancelado: 'Cancelado',
+}
+
+// Marcas y stickers de estatus: nombre, color, orden y cómo cuenta cada sticker.
+function BrandsStickers() {
+  const { brands, stickers, tasks, reload } = useBoard()
+  const [status, setStatus] = useState<Status>(null)
+  const [confirmSticker, setConfirmSticker] = useState<string | null>(null)
+
+  const run = async (fn: () => PromiseLike<{ error: { message: string } | null }>) => {
+    setStatus(null)
+    const { error } = await fn()
+    if (error) setStatus({ tone: 'error', text: error.message.includes('duplicate') ? 'Ese nombre ya existe.' : error.message })
+    reload()
+  }
+
+  const updateBrand = (b: Brand, patch: Partial<Brand>) => run(() => supabase.from('brands').update(patch).eq('id', b.id))
+  const updateSticker = (s: Sticker, patch: Partial<Sticker>) => run(() => supabase.from('status_stickers').update(patch).eq('id', s.id))
+  const move = async (i: number, d: -1 | 1) => {
+    const j = i + d
+    if (j < 0 || j >= stickers.length) return
+    const a = stickers[i]
+    const b = stickers[j]
+    await supabase.from('status_stickers').update({ position: b.position }).eq('id', a.id)
+    await run(() => supabase.from('status_stickers').update({ position: a.position }).eq('id', b.id))
+  }
+  const removeSticker = (s: Sticker) => {
+    const used = tasks.filter((t) => t.sticker_id === s.id).length
+    if (used) return setStatus({ tone: 'error', text: `"${s.name}" está en ${used} iniciativas. Muévelas a otro sticker antes de borrarlo.` })
+    setConfirmSticker(null)
+    run(() => supabase.from('status_stickers').delete().eq('id', s.id))
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-4">
+        <SectionTitle>Marcas</SectionTitle>
+        {brands.length === 0 && <p className="text-sm text-stone-500">Crea marcas desde el Tablero con "+ Marca".</p>}
+        <div className="divide-y divide-stone-200 dark:divide-stone-800">
+          {brands.map((b) => (
+            <div key={b.id} className={`flex flex-wrap items-center gap-3 py-2.5 ${b.archived ? 'opacity-60' : ''}`}>
+              <input
+                className={`${input} w-48 py-1`}
+                defaultValue={b.name}
+                onBlur={(e) => e.target.value.trim() && e.target.value !== b.name && updateBrand(b, { name: e.target.value.trim() })}
+                aria-label="Nombre de la marca"
+              />
+              <ColorPicker value={b.color} onChange={(c) => updateBrand(b, { color: c })} />
+              <span className="text-xs text-stone-500">{tasks.filter((t) => t.brand_id === b.id).length} iniciativas</span>
+              <button className={`${btn} ml-auto`} onClick={() => updateBrand(b, { archived: !b.archived })}>
+                {b.archived ? 'Reactivar' : 'Archivar'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <SectionTitle>Stickers de estatus</SectionTitle>
+        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+          El orden es el de las columnas del tablero. "Cómo cuenta" define si suma a la carga de la persona (en curso), al avance (terminado) o a nada (cancelado).
+        </p>
+        <div className="divide-y divide-stone-200 dark:divide-stone-800">
+          {stickers.map((s, i) => (
+            <div key={s.id} className="flex flex-wrap items-center gap-3 py-2.5">
+              <span className="flex flex-col">
+                <button className="px-1 text-xs text-stone-400 hover:text-stone-700" onClick={() => move(i, -1)} aria-label="Subir">↑</button>
+                <button className="px-1 text-xs text-stone-400 hover:text-stone-700" onClick={() => move(i, 1)} aria-label="Bajar">↓</button>
+              </span>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${chipClass(s.color)}`}>{s.name}</span>
+              <input
+                className={`${input} w-44 py-1`}
+                defaultValue={s.name}
+                onBlur={(e) => e.target.value.trim() && e.target.value !== s.name && updateSticker(s, { name: e.target.value.trim() })}
+                aria-label="Nombre del sticker"
+              />
+              <ColorPicker value={s.color} onChange={(c) => updateSticker(s, { color: c })} />
+              <select className={`${input} py-1 text-xs`} value={s.category} onChange={(e) => updateSticker(s, { category: e.target.value as StickerCategory })} aria-label="Cómo cuenta">
+                {(Object.keys(CATEGORY_LABEL) as StickerCategory[]).map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORY_LABEL[c]}
+                  </option>
+                ))}
+              </select>
+              {confirmSticker === s.id ? (
+                <span className="ml-auto flex gap-1.5">
+                  <button className={`${btn} text-red-600`} onClick={() => removeSticker(s)}>Sí, borrar</button>
+                  <button className={btn} onClick={() => setConfirmSticker(null)}>No</button>
+                </span>
+              ) : (
+                <button className={`${btn} ml-auto text-red-600 dark:text-red-400`} onClick={() => setConfirmSticker(s.id)}>
+                  Borrar
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <StatusText status={status} />
+      </Card>
+    </div>
+  )
+}
+
 const TABS = [
   { id: 'prioridades', label: 'Prioridades y resumen' },
+  { id: 'marcas', label: 'Marcas y stickers' },
   { id: 'plantillas', label: 'Plantillas' },
   { id: 'habilidades', label: 'Habilidades' },
   { id: 'script', label: 'Script de Gmail' },
@@ -549,6 +660,7 @@ export function Configuracion() {
         ))}
       </div>
       {tab === 'prioridades' && <PrioritiesConfigEditor />}
+      {tab === 'marcas' && <BrandsStickers />}
       {tab === 'plantillas' && <TemplatesEditor skills={skills} />}
       {tab === 'habilidades' && <SkillsCatalog skills={skills} onChanged={loadSkills} />}
       {tab === 'script' && (

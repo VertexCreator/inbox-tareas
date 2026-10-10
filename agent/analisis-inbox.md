@@ -44,6 +44,7 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
     join public.team_members m on m.id = l.member_id
     where l.mode = 'corregida' order by l.created_at desc limit 30;
   select last_ingest_at, last_queued, last_junk from public.ingest_state;
+  select name from public.brands where not archived order by name;
   ```
   Las correcciones muestran qué especialidad debió tener cada tarea: úsalas para clasificar
   mejor las nuevas.
@@ -103,9 +104,12 @@ select public.create_item_from_email($json$ {
   "title": "Verbo + qué (máx. 80 caracteres), ej. Campaña de lanzamiento en Instagram",
   "notes": "Contexto necesario para planificarlo (qué piden, entregables, cantidades), sin datos sensibles",
   "priority": "P2",
-  "due_date": "2026-10-14"
+  "due_date": "2026-10-14",
+  "brand": "Peros"
 } $json$::jsonb);
 ```
+- `brand`: la marca a la que se refiere el correo, **exactamente** como aparece en la lista de marcas del
+  paso 1. Si no está claro, omítelo (el gerente la elige al planificar).
 - Usa en el título palabras del tipo de trabajo (campaña, newsletter, evento, nota de prensa, blog…): así la
   base elige la plantilla correcta.
 - `due_date`: la fecha que pide el correo; si no hay, déjala vacía (la base usa 14 días).

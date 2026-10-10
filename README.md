@@ -17,6 +17,8 @@ Claude con tu plan (L-V 8:00 · 13:00 · 18:00 + domingo 21:00) ◄────�
 |---|---|---|
 | Ingesta | `apps-script/Code.gs` | Google Apps Script en la cuenta de Gmail. Sin IA: separa la basura (Promociones, Social, Foros, lista de basura), limpia y recorta el resto y lo deja en `email_queue`. Ahorra tokens. |
 | Listas y planes | `list_items`, `plan_templates`, `draft_plan()`, `confirm_plan()` | Listas de pendientes (estilo Slack Lists). **Planificar** arma al instante tarea + subtareas con responsables por habilidad, nivel y carga; el gerente confirma o modifica, y la plantilla aprende sus cambios. |
+| Marcas e iniciativas | `brands`, `status_stickers`, `tasks` | Cada iniciativa (= tarea) tiene marca, descripción, sticker de estatus, responsable autorizado (`can_own`), observación visible y subtareas. Tablero global o por marca, con columnas por sticker. |
+| Mis tickets | `web/src/pages/Tickets.tsx` | Cada persona ve sus iniciativas y subtareas; el responsable agrega subtareas, cambia el sticker y deja observaciones. |
 | Planificador | `agent/planificador.md` | Tarea programada cada 30 min (L-V): Claude afina los borradores de plan para el pendiente concreto. |
 | Análisis | `agent/analisis-inbox.md` | Prompt de la tarea programada en Claude (conectores Gmail + Supabase). Clasifica, prioriza, crea borradores (nunca envía) y tareas. |
 | Prioridades | Supabase `agent_priorities` | Tus VIPs, temas P1/P2, categorías. Se editan en el dashboard → Configuración (etiquetas por nivel y formato del resumen). Solo admin. |
@@ -28,8 +30,10 @@ Claude con tu plan (L-V 8:00 · 13:00 · 18:00 + domingo 21:00) ◄────�
 ### Quién ve qué
 - **Admin (gerente)**: correos, resúmenes del agente, planificar pendientes, confirmar o modificar repartos,
   fechas límite de tareas y subtareas, configuración, equipo.
-- **Equipo**: listas (crea pendientes), tablero, cargas, actividad; cambia el estado de tareas y marca sus
-  subtareas. No edita fechas ni asignaciones. **No ve tu inbox.**
+- **Responsable de una iniciativa** (autorizado por el gerente): cambia su sticker, deja observaciones y crea,
+  edita o asigna sus subtareas.
+- **Equipo**: listas (crea pendientes), tablero, mis tickets, actividad; crea stickers nuevos y marca sus propias
+  subtareas. No edita fechas, marcas ni responsables. **No ve tu inbox.**
 - **Cualquier otra cuenta**: nada (RLS en todas las tablas; acceso solo si está en `team_members`).
 
 ## Puesta en marcha

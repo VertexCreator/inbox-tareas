@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { memberName, memberOption, shortDate } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { ListItem, Member, PlanRecommendation, PlanTemplate, Priority, Proposal, ProposalSubtask } from '../lib/types'
+import type { Brand, ListItem, Member, PlanRecommendation, PlanTemplate, Priority, Proposal, ProposalSubtask } from '../lib/types'
 import { Tag, btn, btnPrimary, input } from './ui'
 
 interface Props {
   item: ListItem
+  brands: Brand[]
   members: Member[]
   templates: PlanTemplate[]
   skills: string[]
@@ -15,7 +16,7 @@ interface Props {
 
 // Recomendación del agente para convertir un pendiente en tarea con subtareas.
 // La base arma un borrador al instante (habilidad + nivel + carga); el planificador (Claude) lo afina.
-export function PlanPanel({ item, members, templates, skills, onClose, onConfirmed }: Props) {
+export function PlanPanel({ item, brands, members, templates, skills, onClose, onConfirmed }: Props) {
   const [rec, setRec] = useState<PlanRecommendation | null>(null)
   const [draft, setDraft] = useState<Proposal | null>(null)
   const [remember, setRemember] = useState(true)
@@ -23,6 +24,7 @@ export function PlanPanel({ item, members, templates, skills, onClose, onConfirm
   const [error, setError] = useState<string | null>(null)
 
   const active = members.filter((m) => m.active)
+  const owners = active.filter((m) => m.can_own)
 
   const load = useCallback(
     async (templateId?: string) => {
@@ -79,6 +81,7 @@ export function PlanPanel({ item, members, templates, skills, onClose, onConfirm
     if (!draft || !rec) return
     if (!draft.title.trim()) return setError('La tarea necesita un título.')
     if (!draft.assignee_id) return setError('Elige el responsable principal.')
+    if (!owners.some((m) => m.id === draft.assignee_id)) return setError('Esa persona no está autorizada como responsable. Autorízala en Equipo o elige otra.')
     if (!draft.due_date) return setError('Pon la fecha límite de la tarea.')
     const bad = draft.subtasks.find((s) => s.include && !s.title.trim())
     if (bad) return setError('Hay una subtarea marcada sin título. Escríbelo o desmárcala.')
@@ -179,6 +182,19 @@ export function PlanPanel({ item, members, templates, skills, onClose, onConfirm
 
       <div className="flex flex-wrap items-end gap-3 rounded-lg bg-white p-3 dark:bg-stone-900">
         <label className="space-y-1 text-xs">
+          <span className="block text-stone-500 dark:text-stone-400">Marca</span>
+          <select className={input} value={draft.brand_id ?? item.brand_id ?? ''} onChange={(e) => set({ brand_id: e.target.value || null })}>
+            <option value="">Sin marca</option>
+            {brands
+              .filter((b) => !b.archived)
+              .map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <label className="space-y-1 text-xs">
           <span className="block text-stone-500 dark:text-stone-400">Habilidad principal</span>
           <select className={input} value={draft.main_skill ?? ''} onChange={(e) => set({ main_skill: e.target.value || null })}>
             <option value="">General</option>
@@ -195,7 +211,7 @@ export function PlanPanel({ item, members, templates, skills, onClose, onConfirm
             onChange={(e) => set({ assignee_id: e.target.value || null })}
           >
             <option value="">Elige…</option>
-            {active.map((m) => (
+            {owners.map((m) => (
               <option key={m.id} value={m.id}>
                 {memberOption(m, draft.main_skill)}
               </option>

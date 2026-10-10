@@ -1,5 +1,5 @@
 export type Priority = 'P1' | 'P2' | 'P3'
-export type TaskStatus = 'por_hacer' | 'en_curso' | 'hecho'
+export type TaskStatus = 'por_hacer' | 'en_curso' | 'hecho' | 'cancelado'
 export type AssignmentMode = 'auto' | 'sugerida' | 'aprobada' | 'corregida' | 'manual'
 
 // Fila de la vista member_load: el miembro más su carga actual.
@@ -17,6 +17,24 @@ export interface Member {
   load_ratio: number
   skill_levels: Record<string, number>
   open_subtasks: number
+  can_own: boolean
+}
+
+export interface Brand {
+  id: string
+  name: string
+  color: string
+  archived: boolean
+}
+
+export type StickerCategory = 'abierto' | 'en_curso' | 'terminado' | 'cancelado'
+
+export interface Sticker {
+  id: string
+  name: string
+  color: string
+  category: StickerCategory
+  position: number
 }
 
 export interface Task {
@@ -37,6 +55,11 @@ export interface Task {
   source: 'correo' | 'manual'
   list_item_id: string | null
   completed_at: string | null
+  brand_id: string | null
+  sticker_id: string | null
+  observation: string | null
+  observation_at: string | null
+  observation_by: string | null
   created_at: string
   updated_at: string
 }
@@ -75,6 +98,7 @@ export interface ListItem {
   task_id: string | null
   email_id: string | null
   created_by: string | null
+  brand_id: string | null
   created_at: string
 }
 
@@ -110,6 +134,7 @@ export interface ProposalSubtask {
 export interface Proposal {
   title: string
   description: string | null
+  brand_id?: string | null
   main_skill: string | null
   assignee_id: string | null
   recommended_id: string | null
@@ -209,6 +234,7 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
   por_hacer: 'Por hacer',
   en_curso: 'En curso',
   hecho: 'Hecho',
+  cancelado: 'Cancelado',
 }
 
 export const PRIORITY_ORDER: Record<string, number> = { P1: 0, P2: 1, P3: 2, ninguna: 3 }

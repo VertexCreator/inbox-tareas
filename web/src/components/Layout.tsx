@@ -11,6 +11,7 @@ export function Layout() {
     { to: '/', label: 'Hoy' },
     { to: '/listas', label: 'Listas' },
     { to: '/tablero', label: 'Tablero' },
+    { to: '/tickets', label: 'Mis tickets' },
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
   ]
