@@ -198,6 +198,8 @@ export interface Email {
   received_at: string | null
   brand_id: string | null
   suggested_brand: string | null
+  mentioned: boolean
+  addressed: 'para' | 'copia' | 'lista' | null
 }
 
 export interface Rule {

@@ -52,17 +52,30 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
 ### 2. Leer la cola
 ```sql
 select id, gmail_message_id, gmail_thread_id, from_name, from_email, subject, received_at,
-       snippet, attachments, is_vip, is_automatic
+       snippet, attachments, is_vip, is_automatic,
+       to_count, cc_count, addressed, mentioned, mention_excerpts, brands_mentioned
 from public.email_queue where status = 'pendiente' order by received_at limit 200;
 ```
 Normalmente trae lo recibido desde el viernes a las 18:00.
 - `snippet` es el cuerpo ya limpio (sin firmas ni texto citado) y recortado. Úsalo para decidir.
 - `is_vip`: el remitente está en la lista VIP → nunca lo clasifiques como basura.
+- **Correos con muchos destinatarios** (`to_count + cc_count` alto): lo importante es qué le piden **a la
+  gerente** o a **sus marcas**, no el correo entero.
+  - `mentioned = true`: la mencionaron (normalmente con **@Sofía Gómez**). `mention_excerpts` trae los párrafos
+    exactos. Basa el resumen, la prioridad y el pendiente **en esos párrafos**. Si piden algo concreto
+    (confirmar, aprobar, enviar, revisar), es al menos P2, y P1 si tiene plazo hoy o mañana. `needs_reply = true`.
+  - `brands_mentioned`: marcas suyas nombradas en el correo (o por el dominio de alguien en copia). Si no la
+    mencionan pero hablan de sus marcas, usa `mention_excerpts` (trae esos párrafos) y prioriza según lo que digan.
+  - `addressed`: `para` (es destinataria directa), `copia` o `lista`. En copia o lista, **sin** mención y **sin**
+    sus marcas, es informativo: `ninguna` o P3, sin pendiente.
+  - En el `summary` empieza por lo que le toca a ella: "Te piden confirmar el presupuesto de Vaseline antes del
+    jueves 16 (hilo con 5 personas)".
+  - Si un correo nombra varias de sus marcas con pedidos distintos, crea un pendiente por marca en el paso 5.
 - `is_automatic`: notificación automática (noreply, pestaña Notificaciones, listas). Normalmente es
   `ninguna`, salvo que pida una acción real (un banco, un pago, un plazo).
 - Si hay 200 filas, procesa estas y vuelve a consultar hasta vaciar la cola.
-- **Solo abre el correo completo en Gmail** (con `gmail_message_id`) si el extracto no alcanza para
-  decidir la prioridad, o para escribir un borrador (paso 4). No abras correos para nada más.
+- **Solo abre el correo completo en Gmail** (con `gmail_message_id`) si el extracto y `mention_excerpts` no
+  alcanzan para decidir la prioridad, o para escribir un borrador (paso 4). No abras correos para nada más.
 - Si `last_ingest_at` tiene más de 2 horas, el script de Gmail dejó de correr: dilo al inicio del
   resumen ("El script de Gmail no envía correos desde …; revisa Apps Script").
 
@@ -74,6 +87,7 @@ Para cada uno decide:
 - `summary`: una línea en español, qué piden y para cuándo.
 - `reply_by`: fecha `YYYY-MM-DD` si el correo menciona un plazo.
 - **Marca** (`brand` o `suggested_brand`): deduce de qué marca habla el correo. Pistas, en este orden:
+  0. `brands_mentioned` de la cola (ya detectadas por el script);
   1. el dominio del remitente o de las personas en copia, comparado con los alias (`@peros.cl`);
   2. nombres de marca o de producto en el asunto, el cuerpo, los adjuntos o la firma;
   3. el contexto del hilo, por ejemplo una agencia que escribe "para Asperox".
@@ -90,7 +104,7 @@ select public.ingest_email($json$ {
   "from_name": "...", "from_email": "...", "subject": "...",
   "summary": "...", "category": "Clientes", "priority": "P1",
   "needs_reply": true, "reply_by": "2026-10-12", "received_at": "2026-10-10T09:15:00Z",
-  "draft_created": false, "brand": "Peros"
+  "draft_created": false, "brand": "Peros", "mentioned": true, "addressed": "copia"
 } $json$::jsonb);
 ```
 

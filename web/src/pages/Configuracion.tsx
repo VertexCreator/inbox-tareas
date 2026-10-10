@@ -190,32 +190,35 @@ const senderProblem = (v: string) => (SENDER_PATTERN.test(v) ? null : 'Usa un co
 function SenderFilters() {
   const [vip, setVip] = useState<string[] | null>(null)
   const [junk, setJunk] = useState<string[]>([])
+  const [me, setMe] = useState<string[]>([])
   const [saved, setSaved] = useState('')
   const [status, setStatus] = useState<Status>(null)
 
   useEffect(() => {
     supabase
       .from('agent_priorities')
-      .select('vip_senders, junk_senders')
+      .select('vip_senders, junk_senders, my_aliases')
       .eq('id', 1)
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) return setStatus({ tone: 'error', text: error.message })
         setVip(data?.vip_senders ?? [])
         setJunk(data?.junk_senders ?? [])
-        setSaved(JSON.stringify([data?.vip_senders ?? [], data?.junk_senders ?? []]))
+        setMe(data?.my_aliases ?? [])
+        setSaved(JSON.stringify([data?.vip_senders ?? [], data?.junk_senders ?? [], data?.my_aliases ?? []]))
       })
   }, [])
 
   if (!vip) return null
-  const dirty = JSON.stringify([vip, junk]) !== saved
+  const dirty = JSON.stringify([vip, junk, me]) !== saved
 
   const save = async () => {
     const both = vip.filter((s) => junk.includes(s))
     if (both.length) return setStatus({ tone: 'error', text: `${both[0]} está en las dos listas; déjalo solo en una.` })
-    const { error } = await supabase.from('agent_priorities').update({ vip_senders: vip, junk_senders: junk }).eq('id', 1)
+    if (!me.length) return setStatus({ tone: 'error', text: 'Deja al menos una forma en que te mencionan.' })
+    const { error } = await supabase.from('agent_priorities').update({ vip_senders: vip, junk_senders: junk, my_aliases: me }).eq('id', 1)
     if (error) return setStatus({ tone: 'error', text: error.message })
-    setSaved(JSON.stringify([vip, junk]))
+    setSaved(JSON.stringify([vip, junk, me]))
     setStatus({ tone: 'ok', text: 'Guardado. El script lo usa en su próxima revisión (máx. 15 min).' })
   }
 
@@ -240,6 +243,16 @@ function SenderFilters() {
           <div className="text-xs text-stone-500 dark:text-stone-400">Se cuentan, pero Claude no los lee.</div>
           <TagInput id="junk-senders" values={junk} onChange={(v) => { setJunk(v); setStatus(null) }} placeholder="@tienda.com" normalize={(v) => v.toLowerCase()} validate={senderProblem} />
         </div>
+      </div>
+      <div className="space-y-1">
+        <label htmlFor="my-aliases" className="text-sm font-medium">
+          Cómo te mencionan
+        </label>
+        <div className="text-xs text-stone-500 dark:text-stone-400">
+          En correos con muchos destinatarios, el script busca "@" o "+" seguido de estos nombres (sin importar tildes), tu nombre
+          completo o tu correo, y le pasa a Claude solo el párrafo donde te mencionan.
+        </div>
+        <TagInput id="my-aliases" tone="accent" values={me} onChange={(v) => { setMe(v); setStatus(null) }} placeholder="sofía gómez" normalize={(v) => v.toLowerCase().replace(/^[@+]/, '')} />
       </div>
       <div className="flex items-center gap-2">
         <button className={btnPrimary} disabled={!dirty} onClick={save}>

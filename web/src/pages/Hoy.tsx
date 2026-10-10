@@ -366,6 +366,12 @@ function EmailRow({
         {e.summary && <div className="text-xs text-stone-500 dark:text-stone-400">{e.summary}</div>}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
+        {e.mentioned && (
+          <span className="rounded-md bg-indigo-600 px-2 py-0.5 text-[11px] font-medium text-white" title="Te mencionan con @ en este correo">
+            @ Te mencionan
+          </span>
+        )}
+        {!e.mentioned && e.addressed && e.addressed !== 'para' && <Tag>{e.addressed === 'copia' ? 'En copia' : 'Por lista'}</Tag>}
         {e.brand_id ? (
           <BrandChip brand={brands.find((b) => b.id === e.brand_id)} />
         ) : (

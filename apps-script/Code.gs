@@ -7,6 +7,8 @@
  *  - Limpia el resto (sin firmas, sin texto citado, sin links largos), lo recorta y lo deja
  *    en la cola de Supabase. Claude lee esas filas cortas en vez de los correos completos.
  *  - Los remitentes VIP nunca se consideran basura.
+ *  - En correos con muchos destinatarios detecta si te mencionan (@Sofía Gómez), si estás en Para o en copia
+ *    y qué marcas nombran, y recorta el párrafo donde te mencionan para que Claude lea lo que te piden a ti.
  *
  * Configuración: Propiedades del script (⚙ Configuración del proyecto → Propiedades del script)
  *   SUPABASE_URL   https://ddqpbbktcoznkifwyoiy.supabase.co
@@ -21,6 +23,8 @@ const MAX_HILOS = 300;
 const LARGO_EXTRACTO = 500;
 const LARGO_EXTRACTO_AUTOMATICO = 200;
 const LOTE = 100;
+const MAX_EXTRACTOS = 3;
+const LARGO_EXTRACTO_MENCION = 400;
 
 // Pestaña de Gmail → categoría con la que se registra como basura.
 const CATEGORIAS_BASURA = {
@@ -57,6 +61,12 @@ function revisarCorreos() {
     const listas = rpc_(config, 'ingest_config', { p_secret: config.secret }) || {};
     const vip = normalizarLista_(listas.vip_senders);
     const basuraRemitentes = normalizarLista_(listas.junk_senders);
+    const misAlias = normalizarLista_(listas.my_aliases).map(sinTildes_);
+    const marcas = (listas.brands || []).map((b) => ({
+      nombre: b.name,
+      terminos: [b.name].concat(b.aliases || []).map((x) => sinTildes_(String(x).trim())).filter((x) => x && x[0] !== '@'),
+      dominios: (b.aliases || []).map((x) => String(x).trim().toLowerCase()).filter((x) => x[0] === '@').map((x) => x.slice(1)),
+    }));
 
     const ahora = Math.floor(Date.now() / 1000);
     const ultima = Number(props.getProperty('ULTIMA_REVISION')) || ahora - 24 * 3600;
@@ -85,8 +95,17 @@ function revisarCorreos() {
         const de = parsearRemitente_(m.getFrom());
         if (de.email === yo) return; // mis propias respuestas
 
+        const para = extraerCorreos_(m.getTo());
+        const copia = extraerCorreos_(m.getCc());
+        const destino = para.indexOf(yo) >= 0 ? 'para' : copia.indexOf(yo) >= 0 ? 'copia' : 'lista';
+        const cuerpo = cuerpoNuevo_(m.getPlainBody());
+        const asunto = m.getSubject() || '';
+        const menciones = buscarMenciones_(cuerpo, misAlias, yo);
+        const marcasHalladas = buscarMarcas_(asunto + '\n' + cuerpo, marcas, [de.email].concat(para, copia));
+        const relevante = menciones.length > 0 || marcasHalladas.nombres.length > 0;
+
         const esVip = coincide_(de.email, vip);
-        const esBasura = !esVip && (Boolean(categoriaPorHilo[hiloId]) || coincide_(de.email, basuraRemitentes));
+        const esBasura = !esVip && !relevante && (Boolean(categoriaPorHilo[hiloId]) || coincide_(de.email, basuraRemitentes));
         const esAutomatico =
           Boolean(hilosNotificaciones[hiloId]) || REMITENTE_AUTOMATICO.test(de.email) || Boolean(m.getHeader('List-Unsubscribe'));
 
@@ -95,7 +114,7 @@ function revisarCorreos() {
           gmail_thread_id: hiloId,
           from_name: de.nombre,
           from_email: de.email,
-          subject: m.getSubject() || '(sin asunto)',
+          subject: asunto || '(sin asunto)',
           received_at: m.getDate().toISOString(),
           junk: esBasura,
         };
@@ -103,8 +122,15 @@ function revisarCorreos() {
           fila.junk_category = categoriaPorHilo[hiloId] || 'Promociones';
         } else {
           fila.is_vip = esVip;
-          fila.automatic = esAutomatico && !esVip;
-          fila.snippet = limpiar_(m.getPlainBody(), fila.automatic ? LARGO_EXTRACTO_AUTOMATICO : LARGO_EXTRACTO);
+          fila.automatic = esAutomatico && !esVip && !relevante;
+          fila.snippet = recortar_(cuerpo, fila.automatic ? LARGO_EXTRACTO_AUTOMATICO : LARGO_EXTRACTO);
+          fila.to_count = para.length;
+          fila.cc_count = copia.length;
+          fila.addressed = destino;
+          fila.mentioned = menciones.length > 0;
+          fila.brands_mentioned = marcasHalladas.nombres;
+          // Primero los párrafos donde te mencionan; si no hay, donde nombran tus marcas.
+          fila.mention_excerpts = extractos_(cuerpo, menciones.length ? menciones : marcasHalladas.posiciones);
           fila.attachments = m.getAttachments({ includeInlineImages: false }).slice(0, 10).map((a) => a.getName());
         }
         salida.push(fila);
@@ -188,7 +214,7 @@ function coincide_(email, lista) {
 }
 
 // Deja solo lo nuevo del mensaje: corta en el texto citado o la firma, quita links y espacios.
-function limpiar_(texto, max) {
+function cuerpoNuevo_(texto) {
   let t = (texto || '').replace(/\r/g, '');
   const cortes = [
     /^On .+wrote:\s*$/m,
@@ -203,13 +229,106 @@ function limpiar_(texto, max) {
     const i = t.search(re);
     if (i > 0) t = t.slice(0, i);
   });
-  t = t
+  return t
     .split('\n')
     .filter((l) => !l.trim().startsWith('>'))
     .join('\n')
     .replace(/https?:\/\/\S+/g, '[link]')
+    .replace(/<mailto:[^>]+>/g, '')
     .replace(/[ \t ]+/g, ' ')
     .replace(/\n\s*\n+/g, '\n')
     .trim();
+}
+
+function recortar_(t, max) {
   return t.length > max ? t.slice(0, max) + '…' : t;
+}
+
+function limpiar_(texto, max) {
+  return recortar_(cuerpoNuevo_(texto), max);
+}
+
+// Minúsculas y sin tildes, conservando el largo (cada carácter sigue en su posición).
+function sinTildes_(s) {
+  return String(s || '')
+    .split('')
+    .map((c) => c.normalize('NFD')[0])
+    .join('')
+    .toLowerCase();
+}
+
+function escaparRegex_(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extraerCorreos_(lista) {
+  return (String(lista || '').match(/[^\s<>,;"']+@[^\s<>,;"']+/g) || []).map((x) => x.toLowerCase());
+}
+
+// Posiciones donde te mencionan: "@Sofía Gómez", "+Sofía", tu correo, o tu nombre completo.
+function buscarMenciones_(cuerpo, alias, miCorreo) {
+  const t = sinTildes_(cuerpo);
+  const pos = [];
+  alias.forEach((a) => {
+    const conArroba = new RegExp('[@+]\\s?' + escaparRegex_(a) + '(?![a-z])', 'g');
+    let r;
+    while ((r = conArroba.exec(t))) pos.push(r.index);
+    if (a.indexOf(' ') > 0) {
+      const completo = new RegExp('(^|[^a-z@+])' + escaparRegex_(a) + '(?![a-z])', 'g');
+      while ((r = completo.exec(t))) pos.push(r.index + r[1].length);
+    }
+  });
+  if (miCorreo) {
+    let i = t.indexOf(miCorreo.toLowerCase());
+    while (i >= 0) {
+      pos.push(i);
+      i = t.indexOf(miCorreo.toLowerCase(), i + 1);
+    }
+  }
+  return pos.sort((a, b) => a - b);
+}
+
+// Marcas nombradas como palabra completa (para que "axe" no salte en "taxes") o por dominio de quien participa.
+function buscarMarcas_(texto, marcas, correos) {
+  const t = sinTildes_(texto);
+  const nombres = [];
+  const posiciones = [];
+  marcas.forEach((m) => {
+    let hallada = false;
+    m.terminos.forEach((term) => {
+      const re = new RegExp('(^|[^a-z0-9])' + escaparRegex_(term) + '(?![a-z0-9])', 'g');
+      let r;
+      while ((r = re.exec(t))) {
+        hallada = true;
+        posiciones.push(r.index + r[1].length);
+      }
+    });
+    if (!hallada && m.dominios.some((d) => correos.some((c) => c.slice(-(d.length + 1)) === '@' + d || c.endsWith('.' + d)))) hallada = true;
+    if (hallada) nombres.push(m.nombre);
+  });
+  return { nombres: nombres, posiciones: posiciones.sort((a, b) => a - b) };
+}
+
+// El párrafo alrededor de cada posición (sin repetir), hasta MAX_EXTRACTOS.
+function extractos_(cuerpo, posiciones) {
+  const vistos = {};
+  const out = [];
+  for (let k = 0; k < posiciones.length && out.length < MAX_EXTRACTOS; k++) {
+    const p = posiciones[k];
+    let ini = cuerpo.lastIndexOf('\n', p) + 1;
+    let fin = cuerpo.indexOf('\n', p);
+    if (fin < 0) fin = cuerpo.length;
+    if (fin - ini < 80) {
+      const sig = cuerpo.indexOf('\n', fin + 1);
+      fin = sig < 0 ? cuerpo.length : sig;
+    }
+    if (fin - ini > LARGO_EXTRACTO_MENCION) {
+      ini = Math.max(ini, p - Math.floor(LARGO_EXTRACTO_MENCION / 3));
+      fin = Math.min(fin, ini + LARGO_EXTRACTO_MENCION);
+    }
+    if (vistos[ini]) continue;
+    vistos[ini] = true;
+    out.push(cuerpo.slice(ini, fin).replace(/\s+/g, ' ').trim());
+  }
+  return out.join(' … ');
 }

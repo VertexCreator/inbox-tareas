@@ -91,6 +91,10 @@ computadora, y sigue funcionando aunque la computadora esté apagada.
 6. En el **Registro de ejecución** debe aparecer `Revisados N · a la cola X · basura Y`.
    En el dashboard → **Configuración → Script de Gmail** aparece "Último envío hace unos segundos".
 
+**Cuando el script se actualice** (cambia `apps-script/Code.gs` en el repo): en script.google.com abre el
+proyecto, reemplaza todo `Código.gs` con la versión nueva, guarda y ejecuta `instalar` otra vez. Las
+propiedades del script se mantienen.
+
 Para pausarlo: ejecuta la función `desinstalar`. Si regeneras la clave en el dashboard, actualiza
 `INGEST_SECRET` en las propiedades del script.
 

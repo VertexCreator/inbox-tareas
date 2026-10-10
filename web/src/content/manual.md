@@ -130,6 +130,9 @@ Algunos detalles de la recomendación:
     saturadas), donde cada tarjeta lleva a su sección;
   - bandeja de correos por prioridad: **Crear pendiente** manda el correo a "Desde correos" y **Listo** lo
     marca como respondido;
+  - **@ Te mencionan:** en hilos con muchos destinatarios, marca los correos donde te nombraron con @. El
+    resumen del agente se basa en el párrafo donde te piden algo. **En copia** y **Por lista** indican que no
+    eras destinataria directa;
   - equipo de hoy (carga y lo que terminó cada uno), avance por marca y actividad reciente.
 - **Equipo:** tus pendientes ordenados en Vencidas, Hoy, Esta semana y Más adelante, más la actividad del
   equipo.
