@@ -11,7 +11,7 @@
  * Configuración: Propiedades del script (⚙ Configuración del proyecto → Propiedades del script)
  *   SUPABASE_URL   https://ddqpbbktcoznkifwyoiy.supabase.co
  *   SUPABASE_KEY   la publishable key (sb_publishable_...)
- *   INGEST_SECRET  la "clave del script" que muestra el dashboard → Reglas
+ *   INGEST_SECRET  la "clave del script" que muestra el dashboard → Configuración → Script de Gmail
  *
  * Para activarlo: ejecuta la función `instalar` una vez y acepta los permisos.
  */

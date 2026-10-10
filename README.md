@@ -8,7 +8,7 @@ Gmail ──(Apps Script cada 15 min: filtra basura, limpia y recorta)──► 
                                                                           │
 Claude con tu plan (L-V 8:00 · 13:00 · 18:00 + domingo 21:00) ◄───────────┘
   clasifica la cola, prioriza, crea borradores y tareas ──► Supabase ◄──► Dashboard (Vercel)
-                                                            reparto, RLS   Hoy · Tablero · Equipo · Reglas
+                                                            reparto, RLS   Hoy · Listas · Tablero · Equipo · Configuración
 ```
 
 ## Cómo funciona
@@ -16,16 +16,20 @@ Claude con tu plan (L-V 8:00 · 13:00 · 18:00 + domingo 21:00) ◄────�
 | Pieza | Dónde | Qué hace |
 |---|---|---|
 | Ingesta | `apps-script/Code.gs` | Google Apps Script en la cuenta de Gmail. Sin IA: separa la basura (Promociones, Social, Foros, lista de basura), limpia y recorta el resto y lo deja en `email_queue`. Ahorra tokens. |
+| Listas y planes | `list_items`, `plan_templates`, `draft_plan()`, `confirm_plan()` | Listas de pendientes (estilo Slack Lists). **Planificar** arma al instante tarea + subtareas con responsables por habilidad, nivel y carga; el gerente confirma o modifica, y la plantilla aprende sus cambios. |
+| Planificador | `agent/planificador.md` | Tarea programada cada 30 min (L-V): Claude afina los borradores de plan para el pendiente concreto. |
 | Análisis | `agent/analisis-inbox.md` | Prompt de la tarea programada en Claude (conectores Gmail + Supabase). Clasifica, prioriza, crea borradores (nunca envía) y tareas. |
-| Prioridades | Supabase `agent_priorities` | Tus VIPs, temas P1/P2, categorías. Se editan en el dashboard → Reglas. Solo admin. |
+| Prioridades | Supabase `agent_priorities` | Tus VIPs, temas P1/P2, categorías. Se editan en el dashboard → Configuración (etiquetas por nivel y formato del resumen). Solo admin. |
 | Reparto | `supabase/migrations/` → `route_task()` | 1) reglas aprendidas, 2) especialista con menos carga, 3) tarea general → menor carga. Pide aprobación si el especialista está saturado o es P1 urgente. |
 | Aprendizaje | `reassign_task()` | Al corregir con palabra clave se crea una regla ("instagram" → Ana). |
 | Dashboard | `web/` | React + Vite + Tailwind. Login con correo y contraseña (Supabase Auth). |
 | Accesos | `supabase/functions/admin-users` | Edge Function: el admin da acceso o restablece contraseñas desde la página Equipo. |
 
 ### Quién ve qué
-- **Admin**: correos, resúmenes del agente, aprobar/corregir repartos, reglas, equipo.
-- **Equipo**: tablero, cargas, sus tareas; puede crear tareas y moverlas de estado. **No ve tu inbox.**
+- **Admin (gerente)**: correos, resúmenes del agente, planificar pendientes, confirmar o modificar repartos,
+  fechas límite de tareas y subtareas, configuración, equipo.
+- **Equipo**: listas (crea pendientes), tablero, cargas, actividad; cambia el estado de tareas y marca sus
+  subtareas. No edita fechas ni asignaciones. **No ve tu inbox.**
 - **Cualquier otra cuenta**: nada (RLS en todas las tablas; acceso solo si está en `team_members`).
 
 ## Puesta en marcha
@@ -93,7 +97,7 @@ Sigue [INSTALACION.md](INSTALACION.md) en la computadora que va a correr el agen
 Migraciones en `supabase/migrations/`. Tablas: `team_members`, `emails` (solo admin), `tasks`,
 `assignment_rules`, `assignment_log`, `agent_runs` (solo admin), `agent_priorities` (solo admin), `settings`. Vista `member_load`.
 
-Para cambiar el modo (sugerencia ↔ automático) o el umbral de saturación: página **Reglas**.
+Para cambiar el modo (sugerencia ↔ automático) o el umbral de saturación: **Configuración → Reparto e historial**.
 
 ## Seguridad
 - Las claves en `web/.env.local` no se suben (está en `.gitignore`). La *publishable key* es pública por diseño; la seguridad está en RLS.

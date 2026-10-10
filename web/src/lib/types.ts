@@ -15,6 +15,8 @@ export interface Member {
   open_points: number
   open_tasks: number
   load_ratio: number
+  skill_levels: Record<string, number>
+  open_subtasks: number
 }
 
 export interface Task {
@@ -33,9 +35,124 @@ export interface Task {
   assignment_mode: AssignmentMode | null
   assignment_reason: string | null
   source: 'correo' | 'manual'
+  list_item_id: string | null
+  completed_at: string | null
   created_at: string
   updated_at: string
 }
+
+export interface Subtask {
+  id: string
+  task_id: string
+  title: string
+  skill: string | null
+  assignee_id: string | null
+  due_date: string | null
+  done: boolean
+  done_at: string | null
+  position: number
+}
+
+export interface ListRow {
+  id: string
+  name: string
+  description: string | null
+  is_inbox: boolean
+  archived: boolean
+  created_at: string
+}
+
+export type ItemStatus = 'sin_planificar' | 'planificando' | 'planificado' | 'descartado'
+
+export interface ListItem {
+  id: string
+  list_id: string
+  title: string
+  notes: string | null
+  priority: Priority | null
+  due_date: string | null
+  status: ItemStatus
+  task_id: string | null
+  email_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface TemplateItem {
+  title: string
+  skill: string | null
+  days_before: number
+  optional: boolean
+}
+
+export interface PlanTemplate {
+  id: string
+  name: string
+  description: string | null
+  keywords: string[]
+  main_skill: string | null
+  effort_points: number
+  items: TemplateItem[]
+  usage_count: number
+}
+
+export interface ProposalSubtask {
+  title: string
+  skill: string | null
+  assignee_id: string | null
+  recommended_id: string | null
+  reason?: string | null
+  due_date: string | null
+  include: boolean
+  template_index?: number | null
+}
+
+export interface Proposal {
+  title: string
+  description: string | null
+  main_skill: string | null
+  assignee_id: string | null
+  recommended_id: string | null
+  reason: string | null
+  due_date: string
+  priority: Priority
+  effort_points: number
+  subtasks: ProposalSubtask[]
+}
+
+export interface PlanRecommendation {
+  id: string
+  list_item_id: string
+  template_id: string | null
+  status: 'borrador' | 'afinada' | 'confirmada' | 'descartada'
+  refined_by_ai: boolean
+  proposal: Proposal
+  updated_at: string
+}
+
+export interface Activity {
+  id: number
+  kind: string
+  actor: string
+  message: string
+  task_id: string | null
+  created_at: string
+}
+
+export interface PrioritiesConfig {
+  p1: string[]
+  p2: string[]
+  junk: string[]
+  categories: string[]
+  create_items: string
+  notes: string
+  summary: {
+    length: 'corto' | 'normal' | 'detallado'
+    include: Record<'p1' | 'p2' | 'tasks' | 'load' | 'junk' | 'suspicious', boolean>
+  }
+}
+
+export const LEVEL_LABEL: Record<number, string> = { 1: 'Básico', 2: 'Intermedio', 3: 'Avanzado' }
 
 export interface Email {
   id: string

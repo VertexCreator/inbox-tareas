@@ -81,7 +81,7 @@ computadora, y sigue funcionando aunque la computadora esté apagada.
    |---|---|
    | `SUPABASE_URL` | `https://ddqpbbktcoznkifwyoiy.supabase.co` |
    | `SUPABASE_KEY` | la publishable key (`sb_publishable_…`, la misma de Vercel) |
-   | `INGEST_SECRET` | dashboard → **Reglas → Script de Gmail → Copiar** |
+   | `INGEST_SECRET` | dashboard → **Configuración → Script de Gmail → Copiar** |
 
    Guarda las propiedades.
 4. Vuelve al editor (`< >`), elige la función **`instalar`** en el menú de arriba y pulsa **Ejecutar**.
@@ -89,13 +89,13 @@ computadora, y sigue funcionando aunque la computadora esté apagada.
    **Configuración avanzada → Ir a Inbox Tareas · Ingesta** → **Permitir**. Es tu propio script; pide
    leer Gmail y conectarse a Supabase.
 6. En el **Registro de ejecución** debe aparecer `Revisados N · a la cola X · basura Y`.
-   En el dashboard → **Reglas → Script de Gmail** aparece "Último envío hace unos segundos".
+   En el dashboard → **Configuración → Script de Gmail** aparece "Último envío hace unos segundos".
 
 Para pausarlo: ejecuta la función `desinstalar`. Si regeneras la clave en el dashboard, actualiza
 `INGEST_SECRET` en las propiedades del script.
 
 > La primera vez revisa las últimas 24 horas; después, solo lo nuevo. Los remitentes VIP y de basura se
-> editan en el dashboard → **Reglas → Filtros del script de Gmail**.
+> editan en el dashboard → **Configuración → Script de Gmail**.
 
 ## Paso 4 · App de Claude y conectores
 1. Instala la app de escritorio de Claude desde [claude.com/download](https://claude.com/download) y entra con **la misma cuenta**.
@@ -104,31 +104,35 @@ Para pausarlo: ejecuta la función `desinstalar`. Si regeneras la clave en el da
    - En Gmail, la cuenta conectada debe ser **sgomez@dimassicorp.com**.
 
 ## Paso 5 · Crear las tareas programadas
-Las tareas programadas se guardan en cada computadora, por eso se crean aquí. Son dos:
+Las tareas programadas se guardan en cada computadora, por eso se crean aquí. Son tres:
 
 | Tarea | Horario | Prompt |
 |---|---|---|
 | Análisis del inbox | `0 8,13,18 * * 1-5` → lunes a viernes, 8:00, 13:00 y 18:00 | `agent/analisis-inbox.md` |
 | Resumen del fin de semana | `0 21 * * 0` → domingos, 21:00 | `agent/resumen-fin-de-semana.md` |
+| Planificador | `*/30 8-18 * * 1-5` → cada 30 min, lunes a viernes de 8:00 a 18:30 | `agent/planificador.md` |
+
+El Planificador afina las recomendaciones de reparto que pides con **Planificar** en Listas. Si no hay
+nada que afinar termina en una consulta, así que casi no consume.
 
 Los horarios son en la hora de esa computadora.
 
 1. En la app de Claude abre la pestaña **Code** y elige la carpeta `inbox-tareas`.
 2. Escribe exactamente:
-   > Lee INSTALACION.md, agent/analisis-inbox.md y agent/resumen-fin-de-semana.md. Crea dos tareas programadas: "Análisis del inbox" con el horario 0 8,13,18 * * 1-5 y como prompt el contenido completo de agent/analisis-inbox.md, y "Resumen del fin de semana" con el horario 0 21 * * 0 y como prompt el contenido completo de agent/resumen-fin-de-semana.md. Después ejecuta una vez solo "Análisis del inbox" para probar.
-3. Revisa que las dos tareas queden con el nombre, horario y prompt de la tabla.
+   > Lee INSTALACION.md, agent/analisis-inbox.md, agent/resumen-fin-de-semana.md y agent/planificador.md. Crea o actualiza tres tareas programadas: "Análisis del inbox" con el horario 0 8,13,18 * * 1-5 y como prompt el contenido completo de agent/analisis-inbox.md; "Resumen del fin de semana" con el horario 0 21 * * 0 y como prompt el contenido completo de agent/resumen-fin-de-semana.md; y "Planificador" con el horario */30 8-18 * * 1-5 y como prompt el contenido completo de agent/planificador.md. Si ya existen, actualiza su prompt y horario en vez de duplicarlas. Muéstrame la lista al terminar. Después ejecuta una vez solo "Análisis del inbox" para probar.
+3. Revisa que las tres tareas queden con el nombre, horario y prompt de la tabla.
 
 **Importante:** la tarea corre solo con la app de Claude abierta. Si la computadora está apagada o la
 app cerrada a esa hora, corre al volver a abrirla. Deja esa computadora encendida en horario laboral y
 sin suspenderse (*Ajustes del Sistema → Batería/Energía*).
 
 ## Paso 6 · Comprobar que todo funciona
-- [ ] En **Reglas → Script de Gmail** el último envío tiene menos de 15 minutos.
-- [ ] Las dos tareas aparecen en la lista de tareas programadas y la prueba de "Análisis del inbox" terminó sin errores.
+- [ ] En **Configuración → Script de Gmail** el último envío tiene menos de 15 minutos.
+- [ ] Las tres tareas aparecen en la lista de tareas programadas y la prueba de "Análisis del inbox" terminó sin errores.
 - [ ] En el dashboard → **Hoy** aparece "Último análisis: …" con el resumen.
 - [ ] Hay correos en "Correos por responder" y, si correspondía, sugerencias de reparto.
 - [ ] En Gmail hay borradores para los correos P1 (nunca se envía nada solo).
-- [ ] En **Reglas → Mis prioridades** está tu lista.
+- [ ] En **Configuración → Prioridades y resumen** están tus temas.
 
 ---
 
@@ -156,5 +160,5 @@ Cada `git push` a `main` vuelve a publicar el dashboard en Vercel.
 | Código | ✅ GitHub | Descargarlo (paso 2) |
 | Script de Gmail (Apps Script) | ✅ nube de Google | Se instala una vez (paso 3) |
 | Conectores Gmail y Supabase | ✅ cuenta de Claude | Reconectar si lo pide |
-| Tareas programadas (L-V 8 · 13 · 18 + domingo 21) | | ✅ Crearlas (paso 5) |
+| Tareas programadas (análisis, fin de semana, planificador) | | ✅ Crearlas (paso 5) |
 | `web/.env.local` | | Solo si se desarrolla ahí |

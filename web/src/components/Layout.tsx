@@ -9,9 +9,10 @@ export function Layout() {
   const [changingPassword, setChangingPassword] = useState(false)
   const links = [
     { to: '/', label: 'Hoy' },
+    { to: '/listas', label: 'Listas' },
     { to: '/tablero', label: 'Tablero' },
     { to: '/equipo', label: 'Equipo' },
-    ...(isAdmin ? [{ to: '/reglas', label: 'Reglas' }] : []),
+    ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
   ]
 
   return (

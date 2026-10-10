@@ -1,26 +1,38 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { Member } from '../lib/types'
+import { LEVEL_LABEL, type Member } from '../lib/types'
 import { Avatar, Card, LoadBar, SectionTitle, Tag, btn, btnPrimary, input } from '../components/ui'
 
 interface Draft {
   name: string
   email: string
-  specialties: string
+  skill_levels: Record<string, number>
   capacity_points: number
   available: boolean
   is_admin: boolean
 }
 
-const EMPTY: Draft = { name: '', email: '', specialties: '', capacity_points: 10, available: true, is_admin: false }
+const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false }
+
+function useSkills() {
+  const [skills, setSkills] = useState<string[]>([])
+  useEffect(() => {
+    supabase
+      .from('skills')
+      .select('name')
+      .order('name')
+      .then(({ data }) => setSkills((data ?? []).map((x) => x.name as string)))
+  }, [])
+  return skills
+}
 
 function toRow(d: Draft) {
   return {
     name: d.name.trim(),
     email: d.email.trim().toLowerCase(),
-    specialties: d.specialties.split(',').map((s) => s.trim()).filter(Boolean),
+    skill_levels: d.skill_levels,
     capacity_points: d.capacity_points,
     available: d.available,
     is_admin: d.is_admin,
@@ -40,6 +52,7 @@ export function Equipo() {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [accessFor, setAccessFor] = useState<string | null>(null)
+  const skills = useSkills()
 
   const active = members.filter((m) => m.active)
   const inactive = members.filter((m) => !m.active)
@@ -50,7 +63,8 @@ export function Equipo() {
         <div>
           <h1 className="text-xl font-medium">Equipo y carga de trabajo</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            La carga suma los puntos de las tareas abiertas (asignadas o sugeridas) sobre la capacidad de cada persona.
+            El agente recomienda a cada persona según sus habilidades, su nivel y su carga. La carga suma las tareas abiertas
+            y las subtareas que tiene en tareas de otros, sobre su capacidad.
           </p>
         </div>
         {isAdmin && (
@@ -64,6 +78,7 @@ export function Equipo() {
 
       {adding && (
         <MemberForm
+          skills={skills}
           initial={EMPTY}
           submitLabel="Agregar"
           onCancel={() => setAdding(false)}
@@ -83,7 +98,8 @@ export function Equipo() {
             {editing === m.id ? (
               <div className="p-3">
                 <MemberForm
-                  initial={{ ...m, specialties: m.specialties.join(', ') }}
+                  skills={skills}
+                  initial={{ ...m, skill_levels: m.skill_levels ?? {} }}
                   submitLabel="Guardar"
                   canRemove={m.id !== member?.id}
                   onCancel={() => setEditing(null)}
@@ -165,10 +181,20 @@ function MemberRow({
       </div>
       <div className="order-3 col-span-2 md:order-none md:col-span-1">
         <div className="mb-1 flex flex-wrap gap-1.5">
-          {m.specialties.length ? m.specialties.map((s) => <Tag key={s} tone="accent">{s}</Tag>) : <Tag>General</Tag>}
+          {Object.keys(m.skill_levels ?? {}).length ? (
+            Object.entries(m.skill_levels)
+              .sort((a, b) => b[1] - a[1])
+              .map(([s, lvl]) => (
+                <Tag key={s} tone={lvl === 3 ? 'accent' : 'neutral'}>
+                  {s} · {LEVEL_LABEL[lvl]?.toLowerCase()}
+                </Tag>
+              ))
+          ) : (
+            <Tag>Sin habilidades cargadas</Tag>
+          )}
           {!m.available && <Tag tone="warning">No disponible</Tag>}
           <span className="text-xs text-stone-500 dark:text-stone-400">
-            {m.open_tasks} abiertas · {m.open_points}/{m.capacity_points} pts · {doneCount} hechas
+            {m.open_tasks} tareas{m.open_subtasks ? ` + ${m.open_subtasks} subtareas` : ''} · {m.open_points}/{m.capacity_points} pts · {doneCount} hechas
           </span>
         </div>
         <LoadBar ratio={m.load_ratio} />
@@ -192,6 +218,7 @@ function MemberRow({
 }
 
 function MemberForm({
+  skills,
   initial,
   submitLabel,
   onSave,
@@ -199,6 +226,7 @@ function MemberForm({
   onRemove,
   canRemove = false,
 }: {
+  skills: string[]
   initial: Draft
   submitLabel: string
   onSave: (d: Draft) => Promise<string | null>
@@ -227,14 +255,7 @@ function MemberForm({
       <div className="grid gap-2 md:grid-cols-2">
         <input className={input} placeholder="Nombre" value={d.name} onChange={(e) => set({ name: e.target.value })} aria-label="Nombre" />
         <input className={input} placeholder="nombre@tuempresa.com" value={d.email} onChange={(e) => set({ email: e.target.value })} aria-label="Correo de Google Workspace" />
-        <input
-          className={input}
-          placeholder="Especialidades, separadas por coma: Marketing digital, Diseño"
-          value={d.specialties}
-          onChange={(e) => set({ specialties: e.target.value })}
-          aria-label="Especialidades"
-        />
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-sm md:col-span-2">
           Capacidad (pts abiertos)
           <input
             className={`${input} w-20`}
@@ -246,6 +267,41 @@ function MemberForm({
           />
           <span className="text-xs text-stone-400">10 = tiempo completo</span>
         </label>
+      </div>
+      <div>
+        <div className="mb-1.5 text-sm">Habilidades</div>
+        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+          Pulsa una habilidad para cambiar el nivel: sin nivel → básico → intermedio → avanzado.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {[...new Set([...skills, ...Object.keys(d.skill_levels)])].map((sk) => {
+            const lvl = d.skill_levels[sk] ?? 0
+            const cls = [
+              'border-stone-300 text-stone-500 dark:border-stone-700 dark:text-stone-400',
+              'border-stone-400 bg-stone-100 text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200',
+              'border-indigo-300 bg-indigo-50 text-indigo-700 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200',
+              'border-indigo-500 bg-indigo-600 text-white',
+            ][lvl]
+            return (
+              <button
+                key={sk}
+                type="button"
+                className={`rounded-full border px-2.5 py-1 text-xs ${cls}`}
+                onClick={() => {
+                  const next = (lvl + 1) % 4
+                  const levels = { ...d.skill_levels }
+                  if (next === 0) delete levels[sk]
+                  else levels[sk] = next
+                  set({ skill_levels: levels })
+                }}
+                aria-label={`${sk}: ${lvl ? LEVEL_LABEL[lvl] : 'sin nivel'}`}
+              >
+                {sk}
+                {lvl > 0 && <span className="ml-1 opacity-80">{'●'.repeat(lvl)}</span>}
+              </button>
+            )
+          })}
+        </div>
       </div>
       <div className="flex flex-wrap gap-4 text-sm">
         <label className="flex items-center gap-2">

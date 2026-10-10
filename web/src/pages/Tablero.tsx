@@ -10,14 +10,17 @@ const COLUMNS: TaskStatus[] = ['por_hacer', 'en_curso', 'hecho']
 
 export function Tablero() {
   const { isAdmin } = useAuth()
-  const { tasks, members, loading, error, reload } = useBoard()
+  const { tasks, subtasks, members, loading, error, reload } = useBoard()
   const [filter, setFilter] = useState<string>('')
   const [creating, setCreating] = useState(false)
 
   const visible = tasks.filter((t) => {
     if (!filter) return true
     if (filter === 'pendientes') return t.needs_approval && !t.assignee_id
-    return (t.assignee_id ?? t.suggested_assignee_id) === filter
+    return (
+      (t.assignee_id ?? t.suggested_assignee_id) === filter ||
+      subtasks.some((st) => st.task_id === t.id && st.assignee_id === filter)
+    )
   })
 
   return (
@@ -33,14 +36,16 @@ export function Tablero() {
             </option>
           ))}
         </select>
-        <button className={`${btnPrimary} ml-auto`} onClick={() => setCreating((v) => !v)}>
-          {creating ? 'Cerrar' : 'Nueva tarea'}
-        </button>
+        {isAdmin && (
+          <button className={`${btnPrimary} ml-auto`} onClick={() => setCreating((v) => !v)}>
+            {creating ? 'Cerrar' : 'Nueva tarea'}
+          </button>
+        )}
       </div>
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
 
-      {creating && (
+      {creating && isAdmin && (
         <NewTaskForm
           members={members}
           onCreated={() => {
@@ -65,7 +70,15 @@ export function Tablero() {
                   <div className="text-sm text-stone-400">Cargando…</div>
                 ) : (
                   items.map((t) => (
-                    <TaskCard key={t.id} task={t} members={members} isAdmin={isAdmin} onChanged={reload} compact={col === 'hecho'} />
+                    <TaskCard
+                      key={t.id}
+                      task={t}
+                      members={members}
+                      isAdmin={isAdmin}
+                      onChanged={reload}
+                      compact={col === 'hecho'}
+                      subtasks={subtasks.filter((st) => st.task_id === t.id)}
+                    />
                   ))
                 )}
               </div>
