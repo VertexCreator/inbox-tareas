@@ -36,12 +36,12 @@ Gmail ──(Claude con tu plan, 8:00 · 13:00 · 18:00)──► Supabase ◄�
    a *Redirect URLs*; pon la de Vercel como *Site URL*.
 
 ### 2. Primer administrador
-En el SQL editor de Supabase (con tu correo de Workspace):
+Ya creado: `sgomez@dimassicorp.com`. Para agregar otro admin desde el SQL editor de Supabase:
 ```sql
 insert into public.team_members (name, email, is_admin, specialties)
-values ('Tu nombre', 'tu@tuempresa.com', true, '{}');
+values ('Nombre', 'persona@dimassicorp.com', true, '{}');
 ```
-Después agrega al equipo desde la página **Equipo** y borra los miembros "(ejemplo)".
+Al resto del equipo agrégalo desde la página **Equipo** (con su correo `@dimassicorp.com`) y desactiva los miembros "(ejemplo)".
 
 ### 3. Dashboard local
 ```bash
@@ -52,8 +52,19 @@ npm run dev
 ```
 
 ### 4. Publicar en Vercel
-Importa el repo en Vercel con **Root Directory = `web`**, y agrega las variables
-`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_WORKSPACE_DOMAIN`.
+1. En [vercel.com/new](https://vercel.com/new) → *Import Git Repository* → `VertexCreator/inbox-tareas`
+   (la primera vez, autoriza a Vercel a ver el repo privado).
+2. **Root Directory**: `web`. Framework: Vite (lo detecta solo).
+3. *Environment Variables*:
+   - `VITE_SUPABASE_URL` = `https://ddqpbbktcoznkifwyoiy.supabase.co`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY` = la de `web/.env.local`
+   - `VITE_WORKSPACE_DOMAIN` = `dimassicorp.com`
+4. *Deploy*. Copia la URL (ej. `inbox-tareas.vercel.app`) a Supabase → *Authentication* → *URL Configuration*
+   (Site URL y Redirect URLs).
+
+Cada `git push` a `main` vuelve a publicar solo. Vercel solo sirve la página: los cambios del equipo
+(marcar tareas como completadas, moverlas) se guardan directo en Supabase y aparecen en tiempo real
+en las pantallas de todos.
 
 ### 5. Agente (con tu plan de Claude)
 1. Conecta el conector **Gmail** (y Supabase) en Claude.

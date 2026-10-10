@@ -43,7 +43,19 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false }:
       }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className={`font-medium ${task.status === 'hecho' ? 'text-stone-400 line-through' : ''}`}>{task.title}</div>
+        <label className="flex min-w-0 items-start gap-2">
+          {!pending && (
+            <input
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600"
+              checked={task.status === 'hecho'}
+              disabled={busy}
+              onChange={(e) => run(() => updateTaskStatus(task.id, e.target.checked ? 'hecho' : 'por_hacer'))}
+              aria-label="Marcar como completada"
+            />
+          )}
+          <span className={`font-medium ${task.status === 'hecho' ? 'text-stone-400 line-through' : ''}`}>{task.title}</span>
+        </label>
         <PriorityBadge priority={task.priority} />
       </div>
 
