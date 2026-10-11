@@ -45,9 +45,15 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
     where l.mode = 'corregida' order by l.created_at desc limit 30;
   select last_ingest_at, last_queued, last_junk from public.ingest_state;
   select name, aliases from public.brands where not archived order by name;
+  select from_name, from_email, subject, brand, old_priority, new_priority
+    from public.priority_feedback order by created_at desc limit 30;
   ```
   Las correcciones muestran qué especialidad debió tener cada tarea: úsalas para clasificar
   mejor las nuevas.
+  `priority_feedback` son los correos que **la gerente movió a mano** de prioridad (arrastrando en Hoy).
+  Aprende el patrón (quién escribe, sobre qué marca o tema, qué tipo de pedido) y aplícalo a los correos
+  nuevos parecidos. Ejemplo: si mueve a P1 los correos de Carla sobre presupuestos, uno nuevo así es P1.
+  Los correos que ella fijó no los vas a poder cambiar: la base mantiene su prioridad.
 
 ### 2. Leer la cola
 ```sql

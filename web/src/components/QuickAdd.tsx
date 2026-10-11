@@ -33,6 +33,10 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
   const [subs, setSubs] = useState<SubDraft[]>([])
   const [listId, setListId] = useState('')
   const [autoPlan, setAutoPlan] = useState(true)
+  const [searchEmail, setSearchEmail] = useState(true)
+  const [query, setQuery] = useState('')
+  const [queryEdited, setQueryEdited] = useState(false)
+  const [searchDays, setSearchDays] = useState(30)
 
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{ text: string; to: string; label: string } | null>(null)
@@ -51,6 +55,30 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
         setListId((cur) => cur || rows.find((l) => l.name === 'Tareas manuales')?.id || rows[0]?.id || '')
       })
   }, [])
+
+  // Parámetros de búsqueda en Gmail: se arman solos con nombre, descripción y marca (el gerente puede editarlos).
+  useEffect(() => {
+    if (!isAdmin) return
+    supabase
+      .from('settings')
+      .select('email_search_days')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => data && setSearchDays(data.email_search_days))
+  }, [isAdmin])
+
+  useEffect(() => {
+    if (!isAdmin || !searchEmail || queryEdited || !title.trim()) return
+    const t = setTimeout(async () => {
+      const { data } = await supabase.rpc('preview_email_query', {
+        p_title: title,
+        p_description: description,
+        p_brand: brand || null,
+      })
+      if (typeof data === 'string') setQuery(data)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [isAdmin, searchEmail, queryEdited, title, description, brand])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -79,12 +107,16 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
           sticker_id: sticker || null,
           priority,
           subtasks: subs.filter((s) => s.title.trim()),
+          search_email: searchEmail,
+          search_query: searchEmail ? query : null,
         },
       })
       setBusy(false)
       if (error) return setError(error.message)
       return setDone({
-        text: owner ? 'Iniciativa creada y asignada.' : 'Iniciativa creada. El agente sugirió un responsable: apruébalo en Hoy o en el detalle.',
+        text:
+          (owner ? 'Iniciativa creada y asignada.' : 'Iniciativa creada. El agente sugirió un responsable: apruébalo en Hoy o en el detalle.') +
+          (searchEmail ? ' El script buscará el correo relacionado en los próximos 5 minutos y lo vinculará.' : ''),
         to: '/tablero',
         label: 'Ver en el tablero',
       })
@@ -110,6 +142,13 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
     if (error) {
       setBusy(false)
       return setError(error.message)
+    }
+    if (isAdmin && searchEmail) {
+      const { error: searchError } = await supabase.rpc('request_email_search', { p_task_id: null, p_item_id: data.id, p_query: query || null })
+      if (searchError) {
+        setBusy(false)
+        return setError(searchError.message)
+      }
     }
     if (isAdmin && autoPlan) {
       const { error: planError } = await supabase.rpc('draft_plan', { p_item_id: data.id, p_template_id: null })
@@ -326,6 +365,46 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
                   </span>
                 </span>
               </label>
+            )}
+
+            {isAdmin && (
+              <div className="space-y-2 rounded-lg border border-stone-200 p-3 dark:border-stone-800">
+                <label className="flex items-start gap-2 text-sm">
+                  <input type="checkbox" className="mt-0.5" checked={searchEmail} onChange={(e) => setSearchEmail(e.target.checked)} />
+                  <span>
+                    <span className="font-medium">Buscar y vincular el correo relacionado</span>
+                    <span className="block text-xs text-stone-500 dark:text-stone-400">
+                      El script busca en Gmail de los últimos {searchDays} días (cámbialo en Configuración → Script de Gmail) y vincula el
+                      que mejor coincida. Si hay dudas, te deja elegir en el detalle de la tarea.
+                    </span>
+                  </span>
+                </label>
+                {searchEmail && (
+                  <div>
+                    <div className="mb-1 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
+                      <label htmlFor="quick-query">Parámetros de búsqueda en Gmail</label>
+                      {queryEdited && (
+                        <button type="button" className="text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => setQueryEdited(false)}>
+                          Volver a los automáticos
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      id="quick-query"
+                      className={`${input} w-full font-mono text-xs`}
+                      placeholder="Se arma solo al escribir el nombre"
+                      value={query}
+                      onChange={(e) => {
+                        setQuery(e.target.value)
+                        setQueryEdited(true)
+                      }}
+                    />
+                    <p className="mt-1 text-[11px] text-stone-400">
+                      Formato de Gmail: {'{a b}'} = a o b · "frase exacta" · from:dominio.com · newer_than:30d
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             {error && <div className="text-[13px] text-red-600 dark:text-red-400">{error}</div>}

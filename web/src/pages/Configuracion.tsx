@@ -637,6 +637,80 @@ function BrandsStickers() {
   )
 }
 
+
+// Plazo en que el script busca el correo de cada tarea creada a mano.
+function EmailSearchDays() {
+  const [days, setDays] = useState<number | null>(null)
+  const [saved, setSaved] = useState<number | null>(null)
+  const [status, setStatus] = useState<Status>(null)
+
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('email_search_days')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setDays(data?.email_search_days ?? 30)
+        setSaved(data?.email_search_days ?? 30)
+      })
+  }, [])
+
+  if (days === null) return null
+  const save = async () => {
+    if (!(days >= 7 && days <= 180)) return setStatus({ tone: 'error', text: 'Usa un plazo entre 7 y 180 días.' })
+    const { error } = await supabase.from('settings').update({ email_search_days: days }).eq('id', 1)
+    if (error) return setStatus({ tone: 'error', text: error.message })
+    setSaved(days)
+    setStatus({ tone: 'ok', text: 'Guardado. Vale para las próximas tareas que crees.' })
+  }
+
+  return (
+    <Card className="space-y-3 p-4">
+      <SectionTitle>Buscar el correo de las tareas manuales</SectionTitle>
+      <p className="text-xs text-stone-500 dark:text-stone-400">
+        Cuando creas una tarea a mano, el script busca en Gmail el correo relacionado (por nombre, descripción y marca) dentro
+        de este plazo, y lo vincula a la tarea. Revisa cada 5 minutos.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {[30, 45, 60].map((n) => (
+          <button
+            key={n}
+            className={`rounded-lg px-3 py-1.5 text-sm ${days === n ? 'bg-indigo-50 font-medium text-indigo-700 ring-1 ring-indigo-300 dark:bg-indigo-950 dark:text-indigo-200 dark:ring-indigo-800' : 'bg-stone-100 dark:bg-stone-800'}`}
+            onClick={() => {
+              setDays(n)
+              setStatus(null)
+            }}
+          >
+            {n} días
+          </button>
+        ))}
+        <label className="flex items-center gap-2 text-sm">
+          Otro:
+          <input
+            id="email-search-days"
+            type="number"
+            min={7}
+            max={180}
+            step={1}
+            className={`${input} w-20`}
+            value={days}
+            onChange={(e) => {
+              setDays(Math.round(Number(e.target.value)))
+              setStatus(null)
+            }}
+          />
+          días
+        </label>
+        <button className={btnPrimary} disabled={days === saved} onClick={save}>
+          Guardar
+        </button>
+        <StatusText status={status} />
+      </div>
+    </Card>
+  )
+}
+
 const TABS = [
   { id: 'prioridades', label: 'Prioridades y resumen' },
   { id: 'marcas', label: 'Marcas y stickers' },
@@ -692,6 +766,7 @@ export function Configuracion() {
       {tab === 'script' && (
         <div className="space-y-4">
           <SenderFilters />
+          <EmailSearchDays />
           <ScriptConnection />
         </div>
       )}

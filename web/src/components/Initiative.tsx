@@ -15,6 +15,7 @@ import {
 } from '../lib/data'
 import type { Brand, Member, Sticker, Subtask, Task } from '../lib/types'
 import { chipClass } from './colors'
+import { LinkedEmail } from './LinkedEmail'
 import { Avatar, PriorityBadge, btn, btnPrimary, input } from './ui'
 
 export interface BoardCtx {
@@ -251,6 +252,8 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
             <p className="whitespace-pre-line text-sm">{task.description || <span className="text-stone-400">Sin descripción</span>}</p>
           )}
         </section>
+
+        {isAdmin && <LinkedEmail task={task} onChanged={onChanged} />}
 
         <section className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900 dark:bg-amber-950/30">
           <div className="mb-1 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">

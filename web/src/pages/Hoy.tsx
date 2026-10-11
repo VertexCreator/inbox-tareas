@@ -120,6 +120,16 @@ function HoyGerente() {
     else loadInbox()
   }
 
+  // Arrastrar en el resumen: se ve al instante y queda fijada (el agente no la pisa y aprende de esto).
+  const moveEmail = async (e: Email, to: 'P1' | 'P2' | 'P3') => {
+    setEmails((list) => list.map((x) => (x.id === e.id ? { ...x, priority: to, priority_locked: true } : x)))
+    const { error } = await supabase.rpc('set_email_priority', { p_email_id: e.id, p_priority: to })
+    if (error) {
+      setError(error.message)
+      loadInbox()
+    }
+  }
+
   const toPending = async (e: Email) => {
     const { data: inbox } = await supabase.from('lists').select('id').eq('is_inbox', true).maybeSingle()
     if (!inbox) return setError('No encontré la lista "Desde correos".')
@@ -169,6 +179,7 @@ function HoyGerente() {
         created={created}
         onDone={markEmail}
         onPending={toPending}
+        onMove={moveEmail}
         onSeeInbox={() => scrollTo('bandeja')}
       />
 

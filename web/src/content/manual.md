@@ -27,6 +27,15 @@ Usa el botón **+ Nueva tarea** de la barra de arriba, desde cualquier página, 
     responsable, el agente sugiere uno.
   - **Pendiente para planificar:** arma la recomendación al instante y te lleva a revisarla.
 
+**Correo relacionado (gerente):** al crear una tarea a mano, marca **Buscar y vincular el correo relacionado**.
+
+- Los parámetros de búsqueda se arman solos con el nombre, la descripción y la marca (con sus alias y dominios).
+  Puedes editarlos.
+- El script busca en Gmail dentro del plazo configurado (30 días por defecto; se cambia en Configuración →
+  Script de Gmail) y vincula el correo que mejor coincide, en menos de 5 minutos.
+- En el detalle de la iniciativa, la sección **Correo vinculado** lo muestra con **Abrir**. Desde ahí puedes
+  elegir otro candidato, buscar de nuevo con otros parámetros o desvincularlo. El equipo no ve esta sección.
+
 Lo agregado a mano entra al mismo circuito que lo que llega por correo: aparece en el tablero, en Mis tickets y
 en la actividad, y el resumen del día avisa si vence.
 
@@ -151,6 +160,9 @@ Algunos detalles de la recomendación:
       despliega el resto.
     - Filtra por marca con los botones de arriba, o activa **Solo donde me mencionan** para los días con muchos
       hilos grupales.
+    - **Cambia la prioridad** arrastrando la tarjeta a otro cuadro, o con los botones **→P1 / →P2 / →P3** de
+      la esquina. Queda **📌 fijada por ti**: el agente no la cambia y aprende de tus correcciones para los
+      correos parecidos.
     - Debajo: pendientes nuevos, iniciativas que vencen, carga del equipo, basura filtrada y correos sospechosos;
   - "Necesita tu atención" (responder hoy, repartos por decidir, vencidas, personas saturadas), donde cada
     tarjeta lleva a su sección;

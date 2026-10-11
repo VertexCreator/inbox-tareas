@@ -9,6 +9,8 @@
  *  - Los remitentes VIP nunca se consideran basura.
  *  - En correos con muchos destinatarios detecta si te mencionan (@Sofía Gómez), si estás en Para o en copia
  *    y qué marcas nombran, y recorta el párrafo donde te mencionan para que Claude lea lo que te piden a ti.
+ *  - Cada 5 minutos busca en Gmail el correo de las tareas que la gerente crea a mano (con los parámetros
+ *    que arma el dashboard y el plazo de Configuración) y lo vincula a la tarea.
  *
  * Configuración: Propiedades del script (⚙ Configuración del proyecto → Propiedades del script)
  *   SUPABASE_URL   https://ddqpbbktcoznkifwyoiy.supabase.co
@@ -36,19 +38,64 @@ const CATEGORIAS_BASURA = {
 const REMITENTE_AUTOMATICO = /(no-?reply|do-?not-?reply|notificaciones?|notifications?|alertas?|alerts?|mailer-daemon|postmaster)/i;
 
 /** Crea el disparador cada 15 minutos y hace una primera revisión. */
+const FUNCIONES_PROGRAMADAS = ['revisarCorreos', 'buscarCorreosParaTareas'];
+const MAX_RESULTADOS_BUSQUEDA = 10;
+
+/** Crea los disparadores (ingesta cada 15 min y búsquedas para tareas cada 5 min) y corre ambos una vez. */
 function instalar() {
-  ScriptApp.getProjectTriggers()
-    .filter((t) => t.getHandlerFunction() === 'revisarCorreos')
-    .forEach((t) => ScriptApp.deleteTrigger(t));
+  desinstalar();
   ScriptApp.newTrigger('revisarCorreos').timeBased().everyMinutes(INTERVALO_MINUTOS).create();
+  ScriptApp.newTrigger('buscarCorreosParaTareas').timeBased().everyMinutes(5).create();
   revisarCorreos();
+  buscarCorreosParaTareas();
 }
 
-/** Quita el disparador (para pausar la ingesta). */
+/** Quita los disparadores (para pausar el script). */
 function desinstalar() {
   ScriptApp.getProjectTriggers()
-    .filter((t) => t.getHandlerFunction() === 'revisarCorreos')
+    .filter((t) => FUNCIONES_PROGRAMADAS.indexOf(t.getHandlerFunction()) >= 0)
     .forEach((t) => ScriptApp.deleteTrigger(t));
+}
+
+/** Busca en Gmail el correo de cada tarea creada a mano y entrega los candidatos para vincular el mejor. */
+function buscarCorreosParaTareas() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30 * 1000)) return;
+  try {
+    const config = leerConfig_(PropertiesService.getScriptProperties());
+    const pendientes = rpc_(config, 'pending_email_searches', { p_secret: config.secret }) || [];
+    if (!pendientes.length) return;
+    const yo = Session.getEffectiveUser().getEmail().toLowerCase();
+
+    pendientes.forEach((busqueda) => {
+      const resultados = [];
+      GmailApp.search(busqueda.query, 0, MAX_RESULTADOS_BUSQUEDA).forEach((hilo) => {
+        // Del hilo, el último mensaje que no sea mío (si todos son míos, el primero).
+        const mensajes = hilo.getMessages();
+        let m = mensajes[0];
+        for (let i = mensajes.length - 1; i >= 0; i--) {
+          if (parsearRemitente_(mensajes[i].getFrom()).email !== yo) {
+            m = mensajes[i];
+            break;
+          }
+        }
+        const de = parsearRemitente_(m.getFrom());
+        resultados.push({
+          gmail_message_id: m.getId(),
+          gmail_thread_id: hilo.getId(),
+          from_name: de.nombre,
+          from_email: de.email,
+          subject: m.getSubject() || '(sin asunto)',
+          received_at: m.getDate().toISOString(),
+          snippet: limpiar_(m.getPlainBody(), 300),
+        });
+      });
+      const estado = rpc_(config, 'submit_email_search', { p_secret: config.secret, p_request_id: busqueda.id, p_results: resultados });
+      console.log('Búsqueda "' + busqueda.query + '": ' + resultados.length + ' candidatos · ' + estado);
+    });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function revisarCorreos() {

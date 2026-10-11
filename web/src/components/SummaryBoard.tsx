@@ -36,12 +36,15 @@ interface Props {
   created: string[]
   onDone: (id: string) => void
   onPending: (e: Email) => void
+  onMove: (e: Email, to: Level) => void
   onSeeInbox: () => void
 }
 
 // Tres cuadros por prioridad armados con los correos clasificados (no con el texto del agente):
 // siempre al día, y si el agente falla o escribe en formato viejo, se ven igual.
-export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account, created, onDone, onPending, onSeeInbox }: Props) {
+export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account, created, onDone, onPending, onMove, onSeeInbox }: Props) {
+  const [dragging, setDragging] = useState<string | null>(null)
+  const [over, setOver] = useState<Level | null>(null)
   const [brand, setBrand] = useState('')
   const [onlyMentions, setOnlyMentions] = useState(false)
   const [expanded, setExpanded] = useState<Partial<Record<Level, boolean>>>({})
@@ -109,7 +112,31 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
           const isOpen = open[lane.key]
           const shown = expanded[lane.key] ? items : items.slice(0, lane.visible)
           return (
-            <section key={lane.key} className="flex flex-col overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800">
+            <section
+              key={lane.key}
+              className={`flex flex-col overflow-hidden rounded-lg border transition ${
+                over === lane.key ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-stone-200 dark:border-stone-800'
+              }`}
+              onDragOver={(ev) => {
+                if (!dragging) return
+                ev.preventDefault()
+                ev.dataTransfer.dropEffect = 'move'
+                if (over !== lane.key) setOver(lane.key)
+              }}
+              onDragLeave={(ev) => {
+                if (!ev.currentTarget.contains(ev.relatedTarget as Node)) setOver(null)
+              }}
+              onDrop={(ev) => {
+                ev.preventDefault()
+                const em = emails.find((x) => x.id === ev.dataTransfer.getData('text/plain'))
+                setOver(null)
+                setDragging(null)
+                if (em && em.priority !== lane.key) {
+                  setOpen((o) => ({ ...o, [lane.key]: true }))
+                  onMove(em, lane.key)
+                }
+              }}
+            >
               <button
                 className={`flex items-center justify-between px-3 py-2 text-left ${lane.head}`}
                 onClick={() => setOpen({ ...open, [lane.key]: !isOpen })}
@@ -125,6 +152,11 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
                   <span className="text-xs opacity-60">{isOpen ? '▾' : '▸'}</span>
                 </span>
               </button>
+              {dragging && over === lane.key && (
+                <div className="mx-2 mt-2 rounded-md border-2 border-dashed border-indigo-400 py-2 text-center text-xs text-indigo-600 dark:text-indigo-300">
+                  Soltar para mover a {lane.key}
+                </div>
+              )}
               {!isOpen && (
                 <button
                   className="flex flex-1 items-start px-3 py-3 text-left text-xs text-stone-500 hover:bg-stone-50 dark:text-stone-400 dark:hover:bg-stone-800/40"
@@ -146,6 +178,13 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
                       created={created.includes(e.id)}
                       onDone={() => onDone(e.id)}
                       onPending={() => onPending(e)}
+                      onMove={(to) => onMove(e, to)}
+                      onDragStart={() => setDragging(e.id)}
+                      onDragEnd={() => {
+                        setDragging(null)
+                        setOver(null)
+                      }}
+                      isDragging={dragging === e.id}
                     />
                   ))}
                   {items.length > lane.visible && (
@@ -181,6 +220,10 @@ function EmailCard({
   created,
   onDone,
   onPending,
+  onMove,
+  onDragStart,
+  onDragEnd,
+  isDragging,
 }: {
   email: Email
   bar: string
@@ -189,13 +232,45 @@ function EmailCard({
   created: boolean
   onDone: () => void
   onPending: () => void
+  onMove: (to: Level) => void
+  onDragStart: () => void
+  onDragEnd: () => void
+  isDragging: boolean
 }) {
   const due = dueLabel(e.reply_by)
   const who = e.from_name || e.from_email || ''
   return (
-    <div className="group relative overflow-hidden rounded-md bg-white py-2 pl-3 pr-2 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.06)] dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.07)]">
+    <div
+      draggable
+      onDragStart={(ev) => {
+        ev.dataTransfer.setData('text/plain', e.id)
+        ev.dataTransfer.effectAllowed = 'move'
+        onDragStart()
+      }}
+      onDragEnd={onDragEnd}
+      title="Arrastra a otro cuadro para cambiar la prioridad"
+      className={`group relative cursor-grab overflow-hidden rounded-md bg-white py-2 pl-3 pr-2 text-sm shadow-[0_0_0_1px_rgba(0,0,0,0.06)] active:cursor-grabbing dark:bg-stone-900 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.07)] ${
+        isDragging ? 'opacity-40' : ''
+      }`}
+    >
       <span className={`absolute inset-y-0 left-0 w-1 ${bar}`} aria-hidden="true" />
-      <div className="font-medium leading-snug">{e.summary || e.subject}</div>
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1 font-medium leading-snug">{e.summary || e.subject}</div>
+        <span className="flex shrink-0 gap-0.5" aria-label="Mover a otra prioridad">
+          {(['P1', 'P2', 'P3'] as Level[])
+            .filter((l) => l !== e.priority)
+            .map((l) => (
+              <button
+                key={l}
+                className="rounded px-1 py-0.5 text-[10px] text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+                onClick={() => onMove(l)}
+                title={`Mover a ${l}`}
+              >
+                →{l}
+              </button>
+            ))}
+        </span>
+      </div>
       <div className="mt-0.5 truncate text-xs text-stone-500 dark:text-stone-400">
         {who}
         {e.summary && e.subject ? ` · ${e.subject}` : ''}
@@ -214,6 +289,11 @@ function EmailCard({
         )}
         {due && <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${due.cls}`}>{due.text}</span>}
         {e.draft_created && <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">borrador listo</span>}
+        {e.priority_locked && (
+          <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500 dark:bg-stone-800 dark:text-stone-400" title="La prioridad la fijaste tú; el agente no la cambia">
+            📌 fijada por ti
+          </span>
+        )}
       </div>
       <div className="mt-1.5 flex flex-wrap gap-1 border-t border-stone-100 pt-1.5 dark:border-stone-800">
         {url && (

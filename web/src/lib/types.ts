@@ -201,6 +201,7 @@ export interface Email {
   suggested_brand: string | null
   mentioned: boolean
   addressed: 'para' | 'copia' | 'lista' | null
+  priority_locked: boolean
 }
 
 export interface Rule {
@@ -261,6 +262,7 @@ export interface Settings {
   id: number
   autonomy: 'sugerencia' | 'automatico'
   saturation_threshold: number
+  email_search_days: number
 }
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
