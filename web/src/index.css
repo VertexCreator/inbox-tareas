@@ -3,6 +3,22 @@
 /* El tema lo decide la clase .dark en <html> (botón de la barra), no solo el sistema. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Color principal del dashboard = azul Dimassi (línea Flow). Se reemplaza la escala "indigo" de Tailwind,
+   así todos los botones, enlaces y acentos toman la marca sin tocar cada componente. 900 = marino Dimassi. */
+@theme {
+  --color-indigo-50: #eaf4fb;
+  --color-indigo-100: #d3e8f7;
+  --color-indigo-200: #a8d1ef;
+  --color-indigo-300: #6fb2e3;
+  --color-indigo-400: #3393d4;
+  --color-indigo-500: #0a78c4;
+  --color-indigo-600: #0066b3;
+  --color-indigo-700: #00559a;
+  --color-indigo-800: #0b4580;
+  --color-indigo-900: #152c75;
+  --color-indigo-950: #0e1e52;
+}
+
 :root {
   color-scheme: light;
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

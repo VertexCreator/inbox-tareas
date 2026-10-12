@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { ChangePassword } from '../pages/Login'
 import { btn } from './ui'
 import { ThemeToggle } from './ThemeToggle'
+import { TeamflowLogo } from './TeamflowLogo'
 import { QuickAdd } from './QuickAdd'
 import { ErrorBoundary } from './ErrorBoundary'
 
@@ -25,7 +26,9 @@ export function Layout() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/90 backdrop-blur dark:border-stone-800 dark:bg-stone-950/90">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <div className="font-medium">Inbox → Tareas</div>
+          <NavLink to="/" aria-label="Teamflow, ir a Hoy" className="shrink-0">
+            <TeamflowLogo className="h-7" />
+          </NavLink>
           <nav className="flex gap-1">
             {links.map((l) => (
               <NavLink

@@ -1,0 +1,269 @@
+<title>Línea Flow · Brand kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: índice fijo a la izquierda en escritorio; secciones apiladas con especímenes sobre "papel" de marca. */
+:root {
+  --bg: #f4f7fb; --surface: #ffffff; --ink: #0e1e52; --muted: #56688c; --line: #dbe3ee;
+  --accent: #0066b3; --paper: #ffffff; --ink-paper: #152c75;
+  --f-display: "Manrope", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Manrope", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0a1330; --surface: #111c3e; --ink: #e9effa; --muted: #9aaacb; --line: #233160; --accent: #00a1e4; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0a1330; --surface: #111c3e; --ink: #e9effa; --muted: #9aaacb; --line: #233160; --accent: #00a1e4; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; margin: 0; }
+.wrap { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 48px; max-width: 1180px; margin: 0 auto; padding-block: 40px 80px; padding-inline: 24px; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+nav.toc .brand { font-weight: 700; letter-spacing: .14em; font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+nav.toc a { color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: 6px; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--ink); background: var(--surface); outline: none; }
+main { min-width: 0; display: flex; flex-direction: column; gap: 64px; }
+section { scroll-margin-top: 24px; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+h1 { font-family: var(--f-display); font-size: clamp(30px, 4.4vw, 44px); line-height: 1.1; letter-spacing: -.02em; margin: 0 0 14px; text-wrap: balance; font-weight: 700; }
+h2 { font-family: var(--f-display); font-size: 24px; letter-spacing: -.01em; margin: 0 0 6px; text-wrap: balance; font-weight: 700; }
+h3 { font-size: 15px; margin: 0 0 4px; font-weight: 700; }
+p { margin: 0 0 12px; max-width: 64ch; }
+.lead { font-size: 17px; color: var(--muted); max-width: 60ch; }
+.muted { color: var(--muted); }
+.tile { border-radius: 14px; display: flex; align-items: center; justify-content: center; padding: 28px; }
+.tile svg { max-width: 100%; height: auto; display: block; }
+.tile.light { background: var(--paper); border: 1px solid var(--line); }
+.tile.navy { background: #152c75; }
+.tile.black { background: #0b0b0b; }
+.tile.white { background: #ffffff; border: 1px solid var(--line); }
+.hero .tile { padding: 56px 40px; }
+.hero .tile svg { width: min(620px, 100%); }
+.grid { display: grid; gap: 16px; }
+.g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cap { font-size: 12px; color: var(--muted); margin-top: 8px; }
+figure { margin: 0; }
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.rule b { display: block; margin-bottom: 4px; }
+.arch { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 18px 0 4px; font-weight: 600; }
+.arch span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+.arch i { color: var(--muted); font-style: normal; }
+.prod { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.prod .tile { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 30px 22px; }
+.prod-b { padding: 14px 18px 18px; }
+.prod-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.prod-n { font-weight: 700; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.tag.live { color: #1f7a33; border-color: #b9e3c0; background: #ecf8ee; }
+.prod p { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.acc { font-family: var(--f-mono); font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.sw { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.chip { height: 86px; }
+.sw-b { padding: 12px 14px 14px; }
+.sw-n { font-weight: 700; }
+.hex { font-family: var(--f-mono); font-size: 13px; background: none; border: 1px dashed var(--line); color: var(--ink); border-radius: 6px; padding: 2px 8px; margin: 4px 0; cursor: pointer; }
+.hex:hover, .hex:focus-visible { border-color: var(--accent); outline: none; }
+.sw-m { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+.sw-r { font-size: 12px; margin-top: 6px; }
+.spec { width: 100%; border-collapse: collapse; font-size: 13px; }
+.spec th, .spec td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.spec th { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.spec td code, code { font-family: var(--f-mono); font-size: 12px; }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.type-sample { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; }
+.type-sample .big { font-size: 40px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+.type-sample .mid { font-size: 18px; font-weight: 500; margin-top: 8px; }
+.icons { display: flex; flex-wrap: wrap; align-items: end; gap: 28px; }
+.icons figure { text-align: center; }
+.icons .ic { display: flex; align-items: end; justify-content: center; height: 72px; }
+.app { width: 72px; height: 72px; border-radius: 16px; background: #fff; border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+.app svg { width: 52px; height: 52px; }
+.mis .tile { padding: 22px; opacity: .92; }
+.mis figcaption { font-size: 12px; color: #c02646; margin-top: 8px; }
+.files { columns: 2; column-gap: 32px; font-size: 13px; padding-left: 18px; }
+.files li { break-inside: avoid; margin-bottom: 6px; }
+.toast { position: fixed; bottom: calc(env(safe-area-inset-bottom, 0px) + 18px); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 8px; font-size: 13px; }
+@media (max-width: 900px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-inline: 16px; }
+  nav.toc { position: static; flex-direction: row; flex-wrap: wrap; }
+  nav.toc .brand { width: 100%; }
+  .g3, .g4, .rules { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .g2, .g3, .g4, .rules { grid-template-columns: minmax(0, 1fr); }
+  .files { columns: 1; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap">
+  <nav class="toc" aria-label="Índice">
+    <div class="brand">LÍNEA FLOW · DIMASSI</div>
+    <a href="#linea">La línea Flow</a>
+    <a href="#familia">Herramientas</a>
+    <a href="#simbolo">Símbolo</a>
+    <a href="#nombre">Nombre</a>
+    <a href="#versiones">Versiones</a>
+    <a href="#color">Color</a>
+    <a href="#tipografia">Tipografía</a>
+    <a href="#espacio">Espacio y tamaños</a>
+    <a href="#iconos">Íconos</a>
+    <a href="#incorrecto">Usos incorrectos</a>
+    <a href="#archivos">Archivos</a>
+  </nav>
+
+  <main>
+    <section class="hero" id="inicio">
+      <p class="eyebrow">Brand kit · versión 1.0 · octubre 2026</p>
+      <h1>Flow: las herramientas corporativas de Dimassi</h1>
+      <p class="lead">Una sola familia visual para las herramientas internas de la empresa. Todas comparten el anillo y la palabra flow como línea; cada una se reconoce por su nombre y su color de acento. Teamflow es la primera.</p>
+      <div class="tile light">{{LOCK_HERO}}</div>
+    </section>
+
+    <section id="linea">
+      <p class="eyebrow">Sistema</p>
+      <h2>La línea Flow</h2>
+      <p>Flow es la marca paraguas de las herramientas que Dimassi construye para sus equipos. Cada herramienta lleva el nombre de lo que organiza seguido de flow, y siempre se presenta como una herramienta Dimassi.</p>
+      <div class="arch" aria-label="Arquitectura de marca"><span>Dimassi</span><i>→</i><span>Línea Flow</span><i>→</i><span>Teamflow</span><span>Docflow</span><span>Salesflow</span></div>
+      <p class="cap">Docflow y Salesflow son ejemplos para mostrar cómo crece la línea.</p>
+      <div class="rules">
+        <div class="rule"><b>1 · El anillo es común</b>Todas las herramientas usan el mismo anillo de tres arcos alrededor de un centro marino. Nunca se redibuja.</div>
+        <div class="rule"><b>2 · Un acento por herramienta</b>Dos arcos son siempre azul y celeste Dimassi. El tercero toma el color de acento de cada herramienta.</div>
+        <div class="rule"><b>3 · "flow" va como línea</b>El nombre de la herramienta va sólido en marino; flow va en trazo fino y azul. Es la firma de la familia.</div>
+      </div>
+    </section>
+
+    <section id="familia">
+      <p class="eyebrow">Familia</p>
+      <h2>Herramientas de la línea</h2>
+      <p>Para sumar una herramienta: elige el prefijo (una palabra corta en inglés o español que diga qué organiza) y un acento libre de la paleta Dimassi. El resto del logo se genera igual.</p>
+      <div class="grid g3">{{FAMILY}}</div>
+    </section>
+
+    <section id="simbolo">
+      <p class="eyebrow">Teamflow</p>
+      <h2>El símbolo</h2>
+      <p>Tres arcos giran en el mismo sentido alrededor de un centro: el equipo avanzando hacia un objetivo común. Es un eco del anillo de segmentos de Dimassi, sin copiarlo.</p>
+      <div class="grid g2">
+        <figure><div class="tile light">{{SYM}}</div><figcaption class="cap">Símbolo a color. Azul y celeste fijos; verde, el acento de Teamflow.</figcaption></figure>
+        <figure><div class="tile light">{{CONSTRUCTION}}</div><figcaption class="cap">Construcción: anillo de radio 82 sobre un lienzo de 256, arcos de grosor 34 con extremos redondos, huecos de 50° y centro de radio 20.</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="nombre">
+      <p class="eyebrow">Teamflow</p>
+      <h2>El nombre</h2>
+      <p>Las letras están dibujadas a medida, en trazo monolínea con terminaciones redondas, como los arcos del símbolo. El prefijo va en trazo grueso y marino; flow, en trazo fino y azul. No se escribe con una tipografía: se usan siempre los archivos.</p>
+      <div class="tbl"><table class="spec">
+        <thead><tr><th>Parte</th><th>Trazo (sobre altura x de 120)</th><th>Color claro</th><th>Color oscuro</th></tr></thead>
+        <tbody>
+          <tr><td>Prefijo (Team, Doc, Sales…)</td><td>26</td><td><code>#152C75</code> marino</td><td><code>#FFFFFF</code> blanco</td></tr>
+          <tr><td>flow</td><td>11</td><td><code>#0066B3</code> azul</td><td><code>#00A1E4</code> celeste</td></tr>
+          <tr><td>Respaldo "HERRAMIENTAS DIMASSI"</td><td>Manrope 600, espaciado amplio</td><td><code>#152C75</code> al 75 %</td><td><code>#FFFFFF</code> al 75 %</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="versiones">
+      <p class="eyebrow">Teamflow</p>
+      <h2>Versiones</h2>
+      <div class="grid g2">
+        <figure><div class="tile light">{{LOCK_H}}</div><figcaption class="cap">Horizontal · uso principal (barra de la app, documentos).</figcaption></figure>
+        <figure><div class="tile light">{{LOCK_STACK}}</div><figcaption class="cap">Apilada · portadas, pantallas de inicio, espacios cuadrados.</figcaption></figure>
+        <figure><div class="tile navy">{{LOCK_DARK}}</div><figcaption class="cap">Sobre fondo oscuro · prefijo blanco y flow celeste.</figcaption></figure>
+        <figure><div class="tile navy">{{LOCK_WHITE}}</div><figcaption class="cap">Blanco · un solo color sobre marino o fotografías.</figcaption></figure>
+        <figure><div class="tile white">{{LOCK_BLACK}}</div><figcaption class="cap">Negro · impresión a una tinta, fax, sellos.</figcaption></figure>
+        <figure><div class="tile light" style="gap:28px"><div style="width:110px">{{SYM}}</div><div style="width:64px">{{SYM_SMALL}}</div></div><figcaption class="cap">Símbolo solo · a la izquierda, el normal; a la derecha, el corte chico (arcos más gruesos) para 32 px o menos.</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="color">
+      <p class="eyebrow">Paleta</p>
+      <h2>Color</h2>
+      <p>Toda la línea usa la paleta de Dimassi. Toca un código para copiarlo.</p>
+      <div class="grid g3">{{SWATCHES}}</div>
+      <p class="cap">Los valores CMYK son aproximados: para impresión, pídelos a la imprenta con una prueba de color.</p>
+    </section>
+
+    <section id="tipografia">
+      <p class="eyebrow">Texto</p>
+      <h2>Tipografía</h2>
+      <p>Para todo lo que no es el logo (pantallas, presentaciones, documentos) se usa Manrope: geométrica, legible y gratuita (licencia SIL Open Font). Si no está disponible, Avenir Next o Segoe UI.</p>
+      <div class="type-sample">
+        <div class="big">Prioridades del día</div>
+        <div class="mid">Confirmar presupuesto de Vaseline antes del jueves</div>
+        <p class="muted" style="margin-top:10px">Manrope 700 para títulos, 500 para subtítulos y 400 para el texto corrido. Cifras y códigos en IBM Plex Mono.</p>
+      </div>
+    </section>
+
+    <section id="espacio">
+      <p class="eyebrow">Uso</p>
+      <h2>Espacio y tamaños</h2>
+      <div class="grid g2">
+        <figure><div class="tile light">{{CLEAR}}</div><figcaption class="cap">Área de seguridad: deja libre alrededor del logo al menos x, el diámetro del centro del anillo.</figcaption></figure>
+        <div class="tbl"><table class="spec">
+          <thead><tr><th>Versión</th><th>Tamaño mínimo</th></tr></thead>
+          <tbody>
+            <tr><td>Horizontal</td><td>120 px de ancho en pantalla · 30 mm impreso</td></tr>
+            <tr><td>Apilada</td><td>64 px de ancho · 18 mm</td></tr>
+            <tr><td>Símbolo normal</td><td>40 px · 10 mm</td></tr>
+            <tr><td>Símbolo corte chico</td><td>16 a 32 px (favicon, íconos)</td></tr>
+            <tr><td>Respaldo "HERRAMIENTAS DIMASSI"</td><td>Se quita debajo de 240 px de ancho</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="iconos">
+      <p class="eyebrow">Pantallas</p>
+      <h2>Favicon e ícono de la app</h2>
+      <p>En la pestaña del navegador y como ícono se usa el corte chico, sobre blanco.</p>
+      <div class="icons">
+        <figure><div class="ic"><div style="width:48px">{{SYM_SMALL}}</div></div><figcaption class="cap">48 px</figcaption></figure>
+        <figure><div class="ic"><div style="width:32px">{{SYM_SMALL}}</div></div><figcaption class="cap">32 px</figcaption></figure>
+        <figure><div class="ic"><div style="width:16px">{{SYM_SMALL}}</div></div><figcaption class="cap">16 px</figcaption></figure>
+        <figure><div class="ic"><div class="app">{{SYM_SMALL}}</div></div><figcaption class="cap">Ícono de app</figcaption></figure>
+        <figure><div class="ic"><div class="tile black" style="padding:10px;width:56px;height:56px">{{SYM_WHITE}}</div></div><figcaption class="cap">Blanco sobre negro</figcaption></figure>
+      </div>
+    </section>
+
+    <section id="incorrecto">
+      <p class="eyebrow">Cuidado</p>
+      <h2>Usos incorrectos</h2>
+      <div class="grid g4">{{MISUSE}}</div>
+      <p class="cap" style="margin-top:12px">Tampoco: agregar sombras o degradados, cambiar el orden de los arcos, escribir el nombre con otra tipografía o separar "flow" del prefijo.</p>
+    </section>
+
+    <section id="archivos">
+      <p class="eyebrow">Descargas</p>
+      <h2>Archivos</h2>
+      <p>Los originales están en el repositorio <code>VertexCreator/inbox-tareas</code>, carpeta <code>brand/flow/</code>.</p>
+      <ul class="files">
+        <li><code>masters/teamflow-horizontal.svg</code> · con respaldo</li>
+        <li><code>masters/teamflow-horizontal-sin-respaldo.svg</code></li>
+        <li><code>masters/teamflow-stacked.svg</code> · apilada</li>
+        <li><code>masters/teamflow-horizontal-white.svg</code> / <code>-black.svg</code></li>
+        <li><code>masters/teamflow-symbol.svg</code> · símbolo</li>
+        <li><code>masters/teamflow-symbol-small.svg</code> · corte chico</li>
+        <li><code>web-icons/</code> · favicon.ico, favicon.svg, íconos PNG y manifest</li>
+        <li><code>src/flow_brand.py</code> · genera cualquier herramienta nueva de la línea</li>
+      </ul>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script>
+  document.querySelectorAll('[data-copy]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var v = b.getAttribute('data-copy'), t = document.getElementById('toast');
+      function show(msg) { t.textContent = msg; t.hidden = false; clearTimeout(window.__tt); window.__tt = setTimeout(function () { t.hidden = true; }, 1600); }
+      try {
+        navigator.clipboard.writeText(v).then(function () { show(v + ' copiado'); }, function () { show('Selecciona ' + v + ' y cópialo'); });
+      } catch (e) { show('Selecciona ' + v + ' y cópialo'); }
+    });
+  });
+</script>

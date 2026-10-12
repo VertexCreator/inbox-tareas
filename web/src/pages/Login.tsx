@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { googleLoginEnabled } from '../lib/supabase'
 import { Card, btn, btnPrimary, input } from '../components/ui'
 import { ThemeToggle } from '../components/ThemeToggle'
+import { TeamflowLogo } from '../components/TeamflowLogo'
 
 export function Login() {
   const { signInWithPassword, signInWithGoogle } = useAuth()
@@ -25,7 +26,8 @@ export function Login() {
       <ThemeToggle className="fixed right-4 top-4" />
       <Card className="w-full max-w-sm p-6">
         <div className="text-center">
-          <div className="text-lg font-medium">Inbox → Tareas</div>
+          <div className="flex justify-center"><TeamflowLogo className="h-10" /></div>
+          <div className="mt-1 text-[10px] tracking-[0.25em] text-stone-400">HERRAMIENTAS DIMASSI</div>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
             Prioridades del día y tareas del equipo, a partir de tus correos.
           </p>

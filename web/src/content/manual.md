@@ -1,4 +1,6 @@
-# Manual del tablero
+# Manual de Teamflow
+
+Teamflow es la primera herramienta de la línea **Flow**, las herramientas corporativas de Dimassi.
 
 Este dashboard reúne en un solo lugar las iniciativas de marketing del equipo, organizadas por marca, con su
 estatus, responsable, fechas y subtareas. Los pendientes nacen en las listas (o desde los correos del gerente)
