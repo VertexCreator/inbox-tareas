@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, shortDate, useBoard } from '../lib/data'
-import { supabase } from '../lib/supabase'
+import { supabase, uniqueChannel } from '../lib/supabase'
 import type { Brand, ItemStatus, ListItem, ListRow, PlanTemplate, Priority } from '../lib/types'
 import { BrandChip, SuggestedBrand } from '../components/Initiative'
 import { PlanPanel } from '../components/PlanPanel'
@@ -46,7 +46,7 @@ export function Listas() {
   useEffect(() => {
     load()
     const channel = supabase
-      .channel('list-items')
+      .channel(uniqueChannel('list-items'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'list_items' }, () => load())
       .subscribe()
     return () => {

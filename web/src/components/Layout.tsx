@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { ChangePassword } from '../pages/Login'
 import { btn } from './ui'
 import { ThemeToggle } from './ThemeToggle'
 import { QuickAdd } from './QuickAdd'
+import { ErrorBoundary } from './ErrorBoundary'
 
 export function Layout() {
   const { member, isAdmin, signOut } = useAuth()
   const [changingPassword, setChangingPassword] = useState(false)
   const [adding, setAdding] = useState(false)
+  const location = useLocation()
   const links = [
     { to: '/', label: 'Hoy' },
     { to: '/listas', label: 'Listas' },
@@ -88,9 +90,15 @@ export function Layout() {
             <ChangePassword forced={false} onDone={() => setChangingPassword(false)} />
           </div>
         )}
-        <Outlet />
+        <ErrorBoundary key={location.pathname} label="esta página">
+          <Outlet />
+        </ErrorBoundary>
       </main>
-      {adding && <QuickAdd onClose={() => setAdding(false)} />}
+      {adding && (
+        <ErrorBoundary label="la ventana Nueva tarea" onClose={() => setAdding(false)}>
+          <QuickAdd onClose={() => setAdding(false)} />
+        </ErrorBoundary>
+      )}
     </div>
   )
 }

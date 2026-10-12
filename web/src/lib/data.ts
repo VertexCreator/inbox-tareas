@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from './supabase'
+import { supabase, uniqueChannel } from './supabase'
 import type { Brand, Member, Sticker, Subtask, Task } from './types'
 
 // Tareas, subtareas y equipo juntos: la carga de cada miembro cambia con cada tarea.
@@ -34,7 +34,7 @@ export function useBoard() {
   useEffect(() => {
     reload()
     const channel = supabase
-      .channel('tasks-changes')
+      .channel(uniqueChannel('tasks-changes'))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => reload())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, () => reload())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'brands' }, () => reload())

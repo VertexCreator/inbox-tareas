@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { gmailThreadUrl, isOverdue, memberName, progress, shortDate, todayISO, useBoard } from '../lib/data'
-import { supabase } from '../lib/supabase'
+import { supabase, uniqueChannel } from '../lib/supabase'
 import { PRIORITY_ORDER, type Activity, type AgentRun, type Brand, type Email, type Member, type Sticker, type Subtask, type Task } from '../lib/types'
 import { dotClass } from '../components/colors'
 import { BrandChip } from '../components/Initiative'
@@ -562,7 +562,7 @@ function ActivityFeed() {
   useEffect(() => {
     load()
     const channel = supabase
-      .channel('activity')
+      .channel(uniqueChannel('activity'))
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_log' }, () => load())
       .subscribe()
     return () => {
