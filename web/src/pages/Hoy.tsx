@@ -8,6 +8,7 @@ import { dotClass } from '../components/colors'
 import { BrandChip } from '../components/Initiative'
 import { TaskCard } from '../components/TaskCard'
 import { SummaryBoard } from '../components/SummaryBoard'
+import { EmailTaskModal, type ExistingItem } from '../components/EmailTaskModal'
 import { Avatar, Card, Empty, LoadBar, PriorityBadge, SectionTitle, Tag, btn, relativeDate } from '../components/ui'
 
 // Horario del análisis: lunes a viernes 8:00, 13:00 y 18:00; domingo 21:00.
@@ -69,7 +70,9 @@ function HoyGerente() {
   const [threshold, setThreshold] = useState(0.9)
   const [openPlans, setOpenPlans] = useState<{ id: string; title: string }[]>([])
   const [category, setCategory] = useState<string>('')
-  const [created, setCreated] = useState<string[]>([])
+  // Pendientes ya creados por correo (desde la base: no se pierde al recargar).
+  const [existing, setExisting] = useState<Record<string, ExistingItem[]>>({})
+  const [modalEmail, setModalEmail] = useState<Email | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const loadInbox = useCallback(async () => {
@@ -83,7 +86,18 @@ function HoyGerente() {
     ])
     const err = pending.error ?? today.error ?? lastRun.error ?? plans.error
     setError(err ? err.message : null)
-    setEmails((pending.data ?? []) as Email[])
+    const pendingEmails = (pending.data ?? []) as Email[]
+    setEmails(pendingEmails)
+    if (pendingEmails.length) {
+      const { data: items } = await supabase
+        .from('list_items')
+        .select('id, title, status, task_id, email_id')
+        .in('email_id', pendingEmails.map((x) => x.id))
+        .neq('status', 'descartado')
+      const map: Record<string, ExistingItem[]> = {}
+      for (const it of (items ?? []) as (ExistingItem & { email_id: string })[]) (map[it.email_id] ??= []).push(it)
+      setExisting(map)
+    } else setExisting({})
     setTodayCount(today.count ?? 0)
     const runs = (lastRun.data ?? []) as AgentRun[]
     setRun(runs[0] ?? null)
@@ -130,25 +144,25 @@ function HoyGerente() {
     }
   }
 
-  const toPending = async (e: Email) => {
-    const { data: inbox } = await supabase.from('lists').select('id').eq('is_inbox', true).maybeSingle()
-    if (!inbox) return setError('No encontré la lista "Desde correos".')
-    const { error } = await supabase.from('list_items').insert({
-      list_id: inbox.id,
-      title: e.summary?.split(/[;.]/)[0]?.slice(0, 80) || e.subject || 'Pendiente desde correo',
-      notes: `${e.from_name || e.from_email}: ${e.subject ?? ''}`,
-      priority: e.priority === 'ninguna' ? null : e.priority,
-      due_date: e.reply_by,
-      email_id: e.id,
-      brand_id: e.brand_id,
-      suggested_brand: e.brand_id ? null : e.suggested_brand,
-    })
-    if (error) setError(error.message)
-    else setCreated((c) => [...c, e.id])
-  }
+  const toPending = (e: Email) => setModalEmail(e)
+
 
   return (
     <div className="space-y-5">
+      {modalEmail && (
+        <EmailTaskModal
+          email={modalEmail}
+          members={members}
+          brands={brands}
+          stickers={stickers}
+          existing={existing[modalEmail.id] ?? []}
+          onClose={() => setModalEmail(null)}
+          onCreated={() => {
+            loadInbox()
+            reload()
+          }}
+        />
+      )}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-medium">Hola{firstName ? `, ${firstName}` : ''}</h1>
@@ -176,7 +190,7 @@ function HoyGerente() {
         emails={emails}
         brands={brands}
         account={member?.email}
-        created={created}
+        created={Object.keys(existing)}
         onDone={markEmail}
         onPending={toPending}
         onMove={moveEmail}
@@ -225,7 +239,7 @@ function HoyGerente() {
                         email={e}
                         brands={brands}
                         account={member?.email}
-                        created={created.includes(e.id)}
+                        created={!!existing[e.id]}
                         onDone={() => markEmail(e.id)}
                         onPending={() => toPending(e)}
                       />
@@ -401,13 +415,13 @@ function EmailRow({
         )}
         {e.draft_created && <Tag tone="accent">Borrador listo</Tag>}
         {e.reply_by && <Tag tone="warning">antes del {shortDate(e.reply_by)}</Tag>}
-        {created ? (
-          <Tag>En "Desde correos"</Tag>
-        ) : (
-          <button className={`${btn} px-2 py-0.5 text-xs`} onClick={onPending}>
-            Crear pendiente
-          </button>
-        )}
+        <button
+          className={`${btn} px-2 py-0.5 text-xs ${created ? 'text-emerald-700 dark:text-emerald-400' : ''}`}
+          onClick={onPending}
+          title={created ? 'Este correo ya tiene pendiente; puedes crear otro' : 'Crear y asignar desde este correo'}
+        >
+          {created ? '✓ Con pendiente' : 'Crear pendiente'}
+        </button>
         {url && (
           <a className={`${btn} px-2 py-0.5 text-xs`} href={url} target="_blank" rel="noreferrer">
             Abrir

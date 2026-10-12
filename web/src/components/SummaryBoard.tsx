@@ -301,13 +301,13 @@ function EmailCard({
             Abrir ↗
           </a>
         )}
-        {created ? (
-          <span className="px-1.5 py-0.5 text-[11px] text-stone-400">En "Desde correos"</span>
-        ) : (
-          <button className="rounded px-1.5 py-0.5 text-[11px] text-stone-600 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-800" onClick={onPending}>
-            Crear pendiente
-          </button>
-        )}
+        <button
+          className={`rounded px-1.5 py-0.5 text-[11px] hover:bg-stone-100 dark:hover:bg-stone-800 ${created ? 'text-emerald-700 dark:text-emerald-400' : 'text-stone-600 dark:text-stone-300'}`}
+          onClick={onPending}
+          title={created ? 'Este correo ya tiene pendiente; puedes crear otro' : 'Crear y asignar desde este correo'}
+        >
+          {created ? '✓ Con pendiente' : 'Crear pendiente'}
+        </button>
         <button className="ml-auto rounded px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950" onClick={onDone}>
           ✓ Listo
         </button>

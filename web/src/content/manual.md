@@ -158,6 +158,11 @@ Algunos detalles de la recomendación:
       desaparece al instante.
     - Cada tarjeta dice qué te piden, quién, la marca, la fecha ("hoy", "mañana", "venció…"), si te mencionan o
       estás en copia, y tiene **Abrir**, **Crear pendiente** y **✓ Listo**.
+    - **Crear pendiente** abre una ventana con todo precargado desde el correo (título, descripción, marca,
+      prioridad y fecha). Elige **Asignar ahora**: propone responsable y subtareas con persona y fecha según la
+      plantilla, y la iniciativa va directo al tablero. O elige **Planificar después**: queda en Listas con la
+      recomendación lista. Por defecto el correo se marca como atendido. Si ya tiene pendiente, el botón dice
+      **✓ Con pendiente** y la ventana te avisa antes de crear otro.
     - El contador grande dice cuántos hay y "+N nuevos" cuántos llegaron desde la revisión anterior. **Ver los N**
       despliega el resto.
     - Filtra por marca con los botones de arriba, o activa **Solo donde me mencionan** para los días con muchos
