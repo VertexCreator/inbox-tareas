@@ -91,8 +91,9 @@ computadora, y sigue funcionando aunque la computadora esté apagada.
 6. En el **Registro de ejecución** debe aparecer `Revisados N · a la cola X · basura Y`.
    En el dashboard → **Configuración → Script de Gmail** aparece "Último envío hace unos segundos".
 
-**Desde la versión con búsqueda de correos para tareas**, `instalar` crea dos disparadores: la revisión del
-inbox cada 15 minutos y la búsqueda de correos para tareas manuales cada 5 minutos.
+`instalar` crea tres disparadores: la revisión del inbox cada 15 minutos, la búsqueda de correos para tareas
+manuales cada 5 minutos y el reenvío del correo a la persona asignada cada 5 minutos ("Asignación TeamFlow - …").
+Si Google vuelve a pedir permisos (ahora el script también envía correos), acéptalos.
 
 **Cuando el script se actualice** (cambia `apps-script/Code.gs` en el repo): en script.google.com abre el
 proyecto, reemplaza todo `Código.gs` con la versión nueva, guarda y ejecuta `instalar` otra vez. Las

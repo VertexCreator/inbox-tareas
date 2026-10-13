@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, progress, shortDate, todayISO, updateSubtask, updateTask, useBoard } from '../lib/data'
@@ -14,7 +15,9 @@ export function Tickets() {
   const [who, setWho] = useState<string>('')
   const [brand, setBrand] = useState('')
   const [showClosed, setShowClosed] = useState(false)
-  const [openId, setOpenId] = useState<string | null>(null)
+  // El correo de asignación enlaza aquí con ?abrir=<iniciativa>.
+  const [params] = useSearchParams()
+  const [openId, setOpenId] = useState<string | null>(params.get('abrir'))
   const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies }
 
   const personId = (isAdmin && who) || member?.id || ''

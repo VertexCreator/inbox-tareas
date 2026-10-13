@@ -11,6 +11,9 @@
  *    y qué marcas nombran, y recorta el párrafo donde te mencionan para que Claude lea lo que te piden a ti.
  *  - Cada 5 minutos busca en Gmail el correo de las tareas que la gerente crea a mano (con los parámetros
  *    que arma el dashboard y el plazo de Configuración) y lo vincula a la tarea.
+ *  - Cada 5 minutos, cuando se asigna una iniciativa que viene de un correo, reenvía ese correo a la persona
+ *    asignada ("Asignación TeamFlow - <asunto>", con todo el texto y los adjuntos) y guarda el texto del
+ *    correo en la iniciativa para que lo lea en el dashboard.
  *
  * Configuración: Propiedades del script (⚙ Configuración del proyecto → Propiedades del script)
  *   SUPABASE_URL   https://ddqpbbktcoznkifwyoiy.supabase.co
@@ -38,16 +41,21 @@ const CATEGORIAS_BASURA = {
 const REMITENTE_AUTOMATICO = /(no-?reply|do-?not-?reply|notificaciones?|notifications?|alertas?|alerts?|mailer-daemon|postmaster)/i;
 
 /** Crea el disparador cada 15 minutos y hace una primera revisión. */
-const FUNCIONES_PROGRAMADAS = ['revisarCorreos', 'buscarCorreosParaTareas'];
+const FUNCIONES_PROGRAMADAS = ['revisarCorreos', 'buscarCorreosParaTareas', 'reenviarAsignaciones'];
+const ASUNTO_ASIGNACION = 'Asignación TeamFlow - ';
+const MAX_ADJUNTOS_BYTES = 24 * 1024 * 1024; // Gmail acepta hasta 25 MB por correo
+const MAX_TEXTO_TAREA = 60000;
 const MAX_RESULTADOS_BUSQUEDA = 10;
 
-/** Crea los disparadores (ingesta cada 15 min y búsquedas para tareas cada 5 min) y corre ambos una vez. */
+/** Crea los disparadores (ingesta cada 15 min; búsquedas y reenvíos cada 5 min) y corre todo una vez. */
 function instalar() {
   desinstalar();
   ScriptApp.newTrigger('revisarCorreos').timeBased().everyMinutes(INTERVALO_MINUTOS).create();
   ScriptApp.newTrigger('buscarCorreosParaTareas').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('reenviarAsignaciones').timeBased().everyMinutes(5).create();
   revisarCorreos();
   buscarCorreosParaTareas();
+  reenviarAsignaciones();
 }
 
 /** Quita los disparadores (para pausar el script). */
@@ -96,6 +104,187 @@ function buscarCorreosParaTareas() {
   } finally {
     lock.releaseLock();
   }
+}
+
+/**
+ * Reenvía a la persona asignada el correo de cada iniciativa recién asignada y guarda su texto en Teamflow.
+ * Asunto: "Asignación TeamFlow - <asunto original>". Va todo el texto del correo y todos sus adjuntos
+ * (hasta el límite de 25 MB de Gmail; si no caben, el correo dice cuáles quedaron fuera).
+ */
+function reenviarAsignaciones() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30 * 1000)) return;
+  try {
+    const config = leerConfig_(PropertiesService.getScriptProperties());
+    const pendientes = rpc_(config, 'pending_email_forwards', { p_secret: config.secret }) || [];
+    if (!pendientes.length) return;
+    const yo = Session.getEffectiveUser().getEmail().toLowerCase();
+
+    pendientes.forEach((p) => {
+      let resultado;
+      try {
+        resultado = reenviarUno_(p, yo);
+      } catch (e) {
+        resultado = { status: 'error', detail: String((e && e.message) || e) };
+      }
+      rpc_(config, 'submit_email_forward', { p_secret: config.secret, p_id: p.id, p: resultado });
+      console.log('Asignación "' + p.task_title + '" → ' + p.to_name + ': ' + resultado.status + (resultado.detail ? ' (' + resultado.detail + ')' : ''));
+    });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function reenviarUno_(p, yo) {
+  const m = GmailApp.getMessageById(p.gmail_message_id);
+  if (!m) return { status: 'error', detail: 'No encontré el correo en Gmail (¿se borró?)' };
+
+  const archivos = m.getAttachments({ includeInlineImages: false, includeAttachments: true });
+  const imagenes = m.getAttachments({ includeInlineImages: true, includeAttachments: false });
+  const contenido = contenidoCorreo_(m, archivos, imagenes);
+
+  if (!p.forward) return { status: 'omitido', detail: 'Reenvío desactivado en Configuración', content: contenido };
+  const para = String(p.to_email || '').trim().toLowerCase();
+  if (!para) return { status: 'error', detail: 'La persona no tiene correo en Equipo', content: contenido };
+  if (para === yo) return { status: 'omitido', detail: 'Asignada a ti: el correo ya está en tu bandeja', content: contenido };
+
+  // Todos los adjuntos (también las imágenes del cuerpo) mientras quepan en el límite de Gmail.
+  const adjuntos = [];
+  const fuera = [];
+  let total = 0;
+  archivos.concat(imagenes).forEach((a) => {
+    const tam = a.getSize();
+    if (total + tam <= MAX_ADJUNTOS_BYTES) {
+      adjuntos.push(a.copyBlob().setName(a.getName()));
+      total += tam;
+    } else {
+      fuera.push(a.getName());
+    }
+  });
+
+  GmailApp.sendEmail(para, ASUNTO_ASIGNACION + (m.getSubject() || '(sin asunto)'), textoReenvio_(p, m, fuera), {
+    htmlBody: htmlReenvio_(p, m, fuera),
+    attachments: adjuntos,
+  });
+  return {
+    status: 'enviado',
+    detail: fuera.length ? 'Sin adjuntar por tamaño: ' + fuera.join(', ') : null,
+    content: contenido,
+  };
+}
+
+// Lo que se guarda en la iniciativa: encabezados, lista de adjuntos y el texto completo, ordenado.
+function contenidoCorreo_(m, archivos, imagenes) {
+  const de = parsearRemitente_(m.getFrom());
+  return {
+    from_name: de.nombre,
+    from_email: de.email,
+    to: m.getTo() || '',
+    cc: m.getCc() || '',
+    subject: m.getSubject() || '(sin asunto)',
+    date: m.getDate().toISOString(),
+    body_text: formatearTexto_(m.getPlainBody()),
+    attachments: archivos
+      .map((a) => ({ name: a.getName(), size: a.getSize(), type: a.getContentType(), inline: false }))
+      .concat(imagenes.map((a) => ({ name: a.getName(), size: a.getSize(), type: a.getContentType(), inline: true }))),
+  };
+}
+
+// Texto plano legible: saltos de línea uniformes, sin espacios colgando, sin más de una línea en blanco
+// seguida y con los enlaces como "texto (url)".
+function formatearTexto_(texto) {
+  return String(texto || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/ /g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/[ \t]*<(https?:\/\/[^>\s]+)>/g, ' ($1)')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, MAX_TEXTO_TAREA);
+}
+
+const MESES_ = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+function fechaLarga_(d) {
+  const tz = Session.getScriptTimeZone();
+  const n = (f) => Number(Utilities.formatDate(d, tz, f));
+  return n('d') + ' de ' + MESES_[n('M') - 1] + ' de ' + n('yyyy') + ', ' + Utilities.formatDate(d, tz, 'HH:mm');
+}
+
+function fechaCorta_(iso) {
+  if (!iso) return null;
+  const p = String(iso).split('-');
+  return Number(p[2]) + ' de ' + MESES_[Number(p[1]) - 1];
+}
+
+function esc_(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function enlaceTarea_(p) {
+  if (!p.dashboard_url) return null;
+  return p.dashboard_url.replace(/\/+$/, '') + '/tickets' + (p.task_id ? '?abrir=' + encodeURIComponent(p.task_id) : '');
+}
+
+function htmlReenvio_(p, m, fuera) {
+  const datos = [
+    p.brands ? 'Marca: <b>' + esc_(p.brands) + '</b>' : null,
+    p.priority ? 'Prioridad: <b>' + esc_(p.priority) + '</b>' : null,
+    p.due_date ? 'Fecha límite: <b>' + esc_(fechaCorta_(p.due_date)) + '</b>' : null,
+  ].filter(Boolean);
+  const subtareas = (p.subtasks || [])
+    .map((s) => '<li>' + esc_(s.title) + (s.assignee ? ' · ' + esc_(s.assignee) : '') + (s.due_date ? ' · ' + esc_(fechaCorta_(s.due_date)) : '') + '</li>')
+    .join('');
+  const enlace = enlaceTarea_(p);
+  const de = parsearRemitente_(m.getFrom());
+  // Las imágenes del cuerpo van como adjuntos: en el texto se marca dónde estaban.
+  const cuerpo = (m.getBody() || '').replace(/<img[^>]+src=["']?cid:[^"'\s>]+["']?[^>]*>/gi, '<span style="color:#78716c">[imagen adjunta]</span>');
+
+  return (
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1c1917">' +
+    '<div style="max-width:640px;border:1px solid #d6e4f2;border-left:4px solid #0066B3;border-radius:8px;padding:14px 18px;margin:0 0 18px;background:#f5f9fd">' +
+    '<div style="font-size:11px;font-weight:bold;letter-spacing:.6px;color:#0066B3">TEAMFLOW · NUEVA ASIGNACIÓN</div>' +
+    '<div style="font-size:17px;font-weight:bold;margin:6px 0 4px">Hola ' + esc_((p.to_name || '').split(' ')[0]) + ', te asignaron: ' + esc_(p.task_title) + '</div>' +
+    (datos.length ? '<div style="color:#44403c">' + datos.join(' &nbsp;·&nbsp; ') + '</div>' : '') +
+    (p.task_description ? '<div style="margin-top:8px;white-space:pre-wrap">' + esc_(p.task_description) + '</div>' : '') +
+    (subtareas ? '<div style="margin-top:8px;color:#44403c">Subtareas:</div><ul style="margin:4px 0 0;padding-left:20px">' + subtareas + '</ul>' : '') +
+    (enlace ? '<div style="margin-top:12px"><a href="' + esc_(enlace) + '" style="background:#0066B3;color:#fff;text-decoration:none;padding:7px 14px;border-radius:6px;display:inline-block">Ver en TeamFlow</a></div>' : '') +
+    (fuera.length ? '<div style="margin-top:10px;color:#b45309">No cupieron por tamaño (búscalos en el correo original): ' + esc_(fuera.join(', ')) + '</div>' : '') +
+    '</div>' +
+    '<div style="color:#57534e;font-size:13px">---------- Mensaje reenviado ----------<br>' +
+    'De: <b>' + esc_(de.nombre || de.email) + '</b> &lt;' + esc_(de.email) + '&gt;<br>' +
+    'Fecha: ' + esc_(fechaLarga_(m.getDate())) + '<br>' +
+    'Asunto: ' + esc_(m.getSubject() || '(sin asunto)') + '<br>' +
+    'Para: ' + esc_(m.getTo() || '') + '<br>' +
+    (m.getCc() ? 'CC: ' + esc_(m.getCc()) + '<br>' : '') +
+    '</div><br>' +
+    cuerpo +
+    '</div>'
+  );
+}
+
+function textoReenvio_(p, m, fuera) {
+  const enlace = enlaceTarea_(p);
+  const lineas = [
+    'TEAMFLOW · NUEVA ASIGNACIÓN',
+    'Te asignaron: ' + p.task_title,
+    [p.brands ? 'Marca: ' + p.brands : null, p.priority ? 'Prioridad: ' + p.priority : null, p.due_date ? 'Fecha límite: ' + fechaCorta_(p.due_date) : null]
+      .filter(Boolean)
+      .join(' · '),
+    p.task_description || null,
+    enlace ? 'Ver en TeamFlow: ' + enlace : null,
+    fuera.length ? 'No cupieron por tamaño: ' + fuera.join(', ') : null,
+    '',
+    '---------- Mensaje reenviado ----------',
+    'De: ' + m.getFrom(),
+    'Fecha: ' + fechaLarga_(m.getDate()),
+    'Asunto: ' + (m.getSubject() || '(sin asunto)'),
+    'Para: ' + (m.getTo() || ''),
+    m.getCc() ? 'CC: ' + m.getCc() : null,
+    '',
+    m.getPlainBody() || '',
+  ];
+  return lineas.filter((l) => l !== null).join('\n');
 }
 
 function revisarCorreos() {

@@ -759,6 +759,41 @@ function NewAgencyRow({ onCreated }: { onCreated: () => void }) {
 }
 
 
+// Reenviar el correo original a la persona asignada.
+function ForwardOnAssign() {
+  const [on, setOn] = useState<boolean | null>(null)
+  const [status, setStatus] = useState<Status>(null)
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('forward_on_assign')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => setOn(data?.forward_on_assign ?? true))
+  }, [])
+  if (on === null) return null
+  const toggle = async (v: boolean) => {
+    setOn(v)
+    const { error } = await supabase.from('settings').update({ forward_on_assign: v }).eq('id', 1)
+    setStatus(error ? { tone: 'error', text: error.message } : { tone: 'ok', text: v ? 'Activado.' : 'Desactivado: el texto del correo igual se guarda en la iniciativa.' })
+  }
+  return (
+    <Card className="space-y-2 p-4">
+      <SectionTitle>Reenviar el correo al asignar</SectionTitle>
+      <p className="text-xs text-stone-500 dark:text-stone-400">
+        Cuando asignas una iniciativa que viene de un correo, el script (cada 5 minutos) le reenvía ese correo a la persona responsable
+        con el asunto "Asignación TeamFlow - asunto original", todo el texto y todos los adjuntos, y guarda el texto en la iniciativa
+        para que lo lea en Tickets. Si te la asignas a ti, no se reenvía.
+      </p>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} />
+        Reenviar el correo original a la persona asignada
+      </label>
+      <StatusText status={status} />
+    </Card>
+  )
+}
+
 // Plazo en que el script busca el correo de cada tarea creada a mano.
 function EmailSearchDays() {
   const [days, setDays] = useState<number | null>(null)
@@ -888,6 +923,7 @@ export function Configuracion() {
         <div className="space-y-4">
           <SenderFilters />
           <EmailSearchDays />
+          <ForwardOnAssign />
           <ScriptConnection />
         </div>
       )}

@@ -278,6 +278,8 @@ export interface Settings {
   autonomy: 'sugerencia' | 'automatico'
   saturation_threshold: number
   email_search_days: number
+  forward_on_assign: boolean
+  dashboard_url: string | null
 }
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {

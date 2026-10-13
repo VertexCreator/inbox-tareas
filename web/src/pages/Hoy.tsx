@@ -562,6 +562,7 @@ const ACTIVITY_ICON: Record<string, { icon: string; cls: string }> = {
   correccion: { icon: '⇄', cls: 'text-amber-600' },
   observacion: { icon: '💬', cls: 'text-amber-600' },
   pendiente: { icon: '+', cls: 'text-stone-500' },
+  correo: { icon: '✉', cls: 'text-sky-600 dark:text-sky-400' },
 }
 
 function ActivityFeed() {

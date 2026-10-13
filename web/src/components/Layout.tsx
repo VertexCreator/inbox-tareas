@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { ChangePassword } from '../pages/Login'
@@ -10,6 +11,10 @@ import { ErrorBoundary } from './ErrorBoundary'
 
 export function Layout() {
   const { member, isAdmin, signOut } = useAuth()
+  // Guarda la dirección del dashboard para el enlace "Ver en TeamFlow" de los correos de asignación.
+  useEffect(() => {
+    if (isAdmin && window.location.protocol === 'https:') supabase.rpc('remember_dashboard_url', { p_url: window.location.origin }).then(() => {})
+  }, [isAdmin])
   const [changingPassword, setChangingPassword] = useState(false)
   const [adding, setAdding] = useState(false)
   const location = useLocation()

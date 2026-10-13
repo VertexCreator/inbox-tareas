@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { TaskEmail } from './TaskEmail'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import {
@@ -266,6 +267,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
         </section>
 
         {isAdmin && <LinkedEmail task={task} onChanged={onChanged} />}
+        <TaskEmail task={task} members={ctx.members} />
 
         <section className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900 dark:bg-amber-950/30">
           <div className="mb-1 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">

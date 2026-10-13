@@ -110,6 +110,19 @@ haciendo clic fuera.
 
 Los cambios se guardan solos y aparecen en las pantallas de todos en pocos segundos.
 
+**Correo original:** si la iniciativa viene de un correo, al asignarla el script de Gmail (cada 5 minutos):
+
+- le **reenvía el correo a la persona responsable** con el asunto **"Asignación TeamFlow - asunto original"**, todo
+  el texto, **todos los adjuntos** y un recuadro con la iniciativa (marca, prioridad, fecha, subtareas y el botón
+  **Ver en TeamFlow**);
+- guarda el texto en la iniciativa, en la sección **✉ Correo original**: remitente, fecha, para, CC, la lista de
+  adjuntos y el texto ordenado (los enlaces se abren con un clic y el historial del hilo queda plegado).
+
+Lo ven el gerente, el responsable y quienes tienen subtareas en la iniciativa. Si se reasigna, se le reenvía a la
+persona nueva. Si te la asignas a ti, no se reenvía. El gerente puede pulsar **Reenviar de nuevo**, y lo apaga en
+Configuración → Script de Gmail → **Reenviar el correo al asignar**. Gmail acepta hasta 25 MB por correo: si los
+adjuntos no caben, el correo dice cuáles quedaron fuera.
+
 ## 5. Mis tickets
 
 Es tu lista personal de trabajo.
