@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ForwardCountdown } from './ForwardStatus'
+import type { ForwardSchedule } from '../lib/forwards'
 import { useAuth } from '../lib/auth'
 import { memberName, relativeShort } from '../lib/data'
 import { supabase, uniqueChannel } from '../lib/supabase'
@@ -101,7 +103,7 @@ const FORWARD_TEXT: Record<Forward['status'], string> = {
 
 // Correo original de la iniciativa, guardado por el script al asignarla. Lo ven el gerente, el responsable y
 // quienes tienen subtareas en ella (la base no se lo entrega a nadie más).
-export function TaskEmail({ task, members }: { task: Task; members: Member[] }) {
+export function TaskEmail({ task, members, schedule }: { task: Task; members: Member[]; schedule?: ForwardSchedule }) {
   const { isAdmin } = useAuth()
   const [content, setContent] = useState<Content | null>(null)
   const [forwards, setForwards] = useState<Forward[]>([])
@@ -176,7 +178,7 @@ export function TaskEmail({ task, members }: { task: Task; members: Member[] }) 
                     : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'
               }`}
             >
-              {FORWARD_TEXT[last.status]}
+              {last.status === 'pendiente' && schedule ? <ForwardCountdown schedule={schedule} name={memberName(members, last.member_id)} /> : FORWARD_TEXT[last.status]}
               {last.status === 'enviado' && ` a ${memberName(members, last.member_id) ?? 'la persona asignada'}${last.sent_at ? ` el ${relativeShort(last.sent_at)}` : ''}, con todos sus adjuntos.`}
               {last.status !== 'enviado' && last.status !== 'pendiente' && last.detail ? `: ${last.detail}.` : ''}
               {last.status === 'enviado' && last.detail ? ` ${last.detail}.` : ''}

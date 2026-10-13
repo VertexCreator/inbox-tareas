@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useForwards } from '../lib/forwards'
+import { ForwardBadge } from '../components/ForwardStatus'
 import { useSearchParams } from 'react-router-dom'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { useAuth } from '../lib/auth'
@@ -18,7 +20,8 @@ export function Tickets() {
   // El correo de asignación enlaza aquí con ?abrir=<iniciativa>.
   const [params] = useSearchParams()
   const [openId, setOpenId] = useState<string | null>(params.get('abrir'))
-  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies }
+  const { byTask: forwards, schedule: forwardSchedule } = useForwards()
+  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
 
   const personId = (isAdmin && who) || member?.id || ''
   const person = members.find((m) => m.id === personId)
@@ -159,6 +162,7 @@ function Ticket({ task, ctx, onOpen, onChanged, canEdit }: { task: Task; ctx: Bo
           <div className="flex flex-wrap items-center gap-2">
             <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />
             <StickerPill sticker={sticker} />
+            {ctx.forwardSchedule && <ForwardBadge forward={ctx.forwards?.[task.id]} schedule={ctx.forwardSchedule} name={memberName(ctx.members, ctx.forwards?.[task.id]?.member_id ?? null)} />}
             <span className={`text-xs ${overdue ? 'font-medium text-red-600 dark:text-red-400' : dueSoon ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-stone-500'}`}>
               {task.due_date ? `${overdue ? 'Venció' : dueSoon ? 'Vence hoy' : 'Vence'} ${shortDate(task.due_date)}` : 'Sin fecha límite'}
             </span>

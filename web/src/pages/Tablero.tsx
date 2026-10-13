@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useForwards } from '../lib/forwards'
 import { useAuth } from '../lib/auth'
 import { isOverdue, progress, updateTask, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
@@ -50,7 +51,8 @@ export function Tablero() {
     reload()
   }
 
-  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies }
+  const { byTask: forwards, schedule: forwardSchedule } = useForwards()
+  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
   const liveBrands = brands.filter((b) => !b.archived)
 
   const visible = useMemo(() => {

@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { ForwardBadge } from './ForwardStatus'
+import type { ForwardRow, ForwardSchedule } from '../lib/forwards'
 import { TaskEmail } from './TaskEmail'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -27,6 +29,8 @@ export interface BoardCtx {
   stickers: Sticker[]
   subtasks: Subtask[]
   agencies?: Agency[]
+  forwards?: Record<string, ForwardRow>
+  forwardSchedule?: ForwardSchedule
 }
 
 export function StickerPill({ sticker }: { sticker?: Sticker | null }) {
@@ -76,13 +80,16 @@ export function InitiativeCard({ task, ctx, onOpen, showBrand = true }: { task: 
           {subs.length > 0 && `${done}/${subs.length} · `}
           {task.due_date ? (overdue ? `venció ${shortDate(task.due_date)}` : shortDate(task.due_date)) : 'sin fecha'}
         </span>
-        {pending ? (
-          <span className="text-amber-700 dark:text-amber-300">Sugerido: {ownerName ?? '—'}</span>
-        ) : owner && ownerName ? (
-          <Avatar name={ownerName} id={owner} />
-        ) : (
-          <span>Sin responsable</span>
-        )}
+        <span className="flex items-center gap-1.5">
+          {ctx.forwardSchedule && <ForwardBadge forward={ctx.forwards?.[task.id]} schedule={ctx.forwardSchedule} name={memberName(ctx.members, ctx.forwards?.[task.id]?.member_id ?? null)} />}
+          {pending ? (
+            <span className="text-amber-700 dark:text-amber-300">Sugerido: {ownerName ?? '—'}</span>
+          ) : owner && ownerName ? (
+            <Avatar name={ownerName} id={owner} />
+          ) : (
+            <span>Sin responsable</span>
+          )}
+        </span>
       </div>
     </button>
   )
@@ -267,7 +274,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
         </section>
 
         {isAdmin && <LinkedEmail task={task} onChanged={onChanged} />}
-        <TaskEmail task={task} members={ctx.members} />
+        <TaskEmail task={task} members={ctx.members} schedule={ctx.forwardSchedule} />
 
         <section className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900 dark:bg-amber-950/30">
           <div className="mb-1 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">

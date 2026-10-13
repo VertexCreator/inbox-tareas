@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useForwards, type ForwardRow, type ForwardSchedule } from '../lib/forwards'
+import { ForwardBadge } from '../components/ForwardStatus'
 import { BrandChips, BrandPicker, brandIdsOf } from '../components/Brands'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
@@ -58,6 +60,8 @@ interface Ctx {
   planning: string | null
   onPlan: (id: string | null) => void
   onAccepted: () => void
+  forwards: Record<string, ForwardRow>
+  forwardSchedule: ForwardSchedule
 }
 
 export function Listas() {
@@ -74,6 +78,7 @@ export function Listas() {
   const [view, setView] = useStoredString('teamflow.listas.vista', 'lista') as [View, (v: View) => void]
   const [filters, setFilters] = useStored('teamflow.listas.filtros', EMPTY_FILTERS)
   const [error, setError] = useState<string | null>(null)
+  const { byTask: forwards, schedule: forwardSchedule } = useForwards()
 
   const load = useCallback(async () => {
     const [l, i, t, s] = await Promise.all([
@@ -164,6 +169,8 @@ export function Listas() {
       load()
       reloadBoard()
     },
+    forwards,
+    forwardSchedule,
   }
   const planPanel = (item: ListItem) => (
     <PlanPanel
@@ -356,6 +363,11 @@ function ItemRow({ row: r, ctx, canDelete, onDiscard, onRemove }: { row: Row; ct
       </div>
       <span className="justify-self-end md:justify-self-start">
         <StagePill row={r} />
+        {r.task && (
+          <span className="ml-1.5">
+            <ForwardBadge forward={ctx.forwards[r.task.id]} schedule={ctx.forwardSchedule} name={memberName(ctx.members, ctx.forwards[r.task.id]?.member_id ?? null)} />
+          </span>
+        )}
         {r.subs.length > 0 && (
           <span className="ml-1.5 text-[11px] text-stone-500 dark:text-stone-400">
             {r.subs.filter((s) => s.done).length}/{r.subs.length}
@@ -416,7 +428,10 @@ function ItemCard({ row: r, ctx, hideStage = false }: { row: Row; ctx: Ctx; hide
           <span className={overdue ? 'font-medium text-red-600 dark:text-red-400' : ''}>{r.due ? (overdue ? `venció ${shortDate(r.due)}` : shortDate(r.due)) : 'sin fecha'}</span>
           {r.subs.length > 0 && <span>· {done}/{r.subs.length}</span>}
         </span>
-        {r.owner && ownerName ? <Avatar name={ownerName} id={r.owner} /> : <span>Sin asignar</span>}
+        <span className="flex items-center gap-1.5">
+          {r.task && <ForwardBadge forward={ctx.forwards[r.task.id]} schedule={ctx.forwardSchedule} name={memberName(ctx.members, ctx.forwards[r.task.id]?.member_id ?? null)} />}
+          {r.owner && ownerName ? <Avatar name={ownerName} id={r.owner} /> : <span>Sin asignar</span>}
+        </span>
       </div>
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <span className="truncate text-[11px] text-stone-400">{ctx.showList ? listName : ''}</span>

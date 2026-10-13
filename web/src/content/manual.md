@@ -118,6 +118,20 @@ Los cambios se guardan solos y aparecen en las pantallas de todos en pocos segun
 - guarda el texto en la iniciativa, en la sección **✉ Correo original**: remitente, fecha, para, CC, la lista de
   adjuntos y el texto ordenado (los enlaces se abren con un clic y el historial del hilo queda plegado).
 
+**Indicador del correo** (en las tarjetas del Tablero, Tickets y Listas, y en el detalle):
+
+| Indicador | Qué significa |
+|---|---|
+| **✉ 3:12** (ámbar) | El correo está en camino: es lo que falta para la próxima pasada del script (cada 5 minutos). |
+| **✉ ya** | El script está pasando en este momento. |
+| **✉✓** (verde) | Gmail ya envió el correo a la persona. Pasa el mouse para ver a quién y cuándo. |
+| **✉!** (rojo) | No se pudo enviar; pasa el mouse para ver por qué. Se reintenta solo hasta 3 veces. |
+| **✉–** (gris) | No se reenvió (por ejemplo, te la asignaste a ti o el reenvío está apagado). |
+| **✉ script detenido** (rojo) | El script de Gmail lleva más de 15 minutos sin revisar: ábrelo en Apps Script. |
+
+Cuando el correo sale, al gerente le aparece un aviso abajo a la derecha. "Enviado" quiere decir que Gmail lo
+envió; si la dirección no existe, el aviso de rebote llega a la bandeja del gerente.
+
 Lo ven el gerente, el responsable y quienes tienen subtareas en la iniciativa. Si se reasigna, se le reenvía a la
 persona nueva. Si te la asignas a ti, no se reenvía. El gerente puede pulsar **Reenviar de nuevo**, y lo apaga en
 Configuración → Script de Gmail → **Reenviar el correo al asignar**. Gmail acepta hasta 25 MB por correo: si los

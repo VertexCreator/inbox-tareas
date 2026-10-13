@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ForwardToasts } from './ForwardStatus'
 import { supabase } from '../lib/supabase'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
@@ -102,6 +103,7 @@ export function Layout() {
           <Outlet />
         </ErrorBoundary>
       </main>
+      <ForwardToasts />
       {adding && (
         <ErrorBoundary label="la ventana Nueva tarea" onClose={() => setAdding(false)}>
           <QuickAdd onClose={() => setAdding(false)} />
