@@ -38,7 +38,7 @@ Usa el botón **+ Nueva tarea** de la barra de arriba, desde cualquier página, 
 - En el detalle de la iniciativa, la sección **Correo vinculado** lo muestra con **Abrir**. Desde ahí puedes
   elegir otro candidato, buscar de nuevo con otros parámetros o desvincularlo. El equipo no ve esta sección.
 
-Lo agregado a mano entra al mismo circuito que lo que llega por correo: aparece en el tablero, en Mis tickets y
+Lo agregado a mano entra al mismo circuito que lo que llega por correo: aparece en el tablero, en Mis tareas y
 en la actividad, y el resumen del día avisa si vence.
 
 ## 2. Conceptos
@@ -118,7 +118,7 @@ Los cambios se guardan solos y aparecen en las pantallas de todos en pocos segun
 - guarda el texto en la iniciativa, en la sección **✉ Correo original**: remitente, fecha, para, CC, la lista de
   adjuntos y el texto ordenado (los enlaces se abren con un clic y el historial del hilo queda plegado).
 
-**Indicador del correo** (en las tarjetas del Tablero, Tickets y Listas, y en el detalle):
+**Indicador del correo** (en las tarjetas del Tablero, Mis tareas y Listas, y en el detalle):
 
 | Indicador | Qué significa |
 |---|---|
@@ -137,18 +137,21 @@ persona nueva. Si te la asignas a ti, no se reenvía. El gerente puede pulsar **
 Configuración → Script de Gmail → **Reenviar el correo al asignar**. Gmail acepta hasta 25 MB por correo: si los
 adjuntos no caben, el correo dice cuáles quedaron fuera.
 
-## 5. Mis tickets
+## 5. Mis tareas
 
-Es tu lista personal de trabajo.
+Todo lo que te toca, en un solo lugar: las iniciativas de las que eres **responsable** y tus **subtareas** en
+iniciativas de otras personas (cada fila dice cuál es cuál).
 
-- **Iniciativas a cargo:** cada una con su marca, etapa, fecha y descripción.
-  - Cambia la etapa desde el menú del ticket.
-  - Agrega subtareas en la fila **+ Nueva subtarea**. Si no eliges a otra persona, quedan a tu nombre.
-  - Marca las subtareas a medida que las terminas. Todo eso suma al avance de la marca en el tablero.
-- **Subtareas en iniciativas de otros:** lo que te asignaron dentro de iniciativas de un compañero. Haz clic en
-  el nombre de la iniciativa para ver el detalle.
-- Filtra por marca con las etiquetas de arriba. **Mostrar terminados** incluye lo ya cerrado.
-- El gerente puede elegir a cualquier persona del equipo en el menú de arriba para ver sus tickets.
+- **Arriba, tres contadores:** pendientes, vencidas y terminadas esta semana. Haz clic en uno para ir a esa lista.
+- **Pendientes**, ordenadas por urgencia: Vencidas, Hoy, Mañana, Próximos 7 días, Más adelante y Sin fecha límite.
+  - Marca el **círculo ✓** para terminarla. Una iniciativa pasa a la etapa que cuenta como *Terminado*; si le
+    quedan subtareas abiertas, te pregunta antes.
+  - **▸ Subtareas** despliega las de la iniciativa para marcarlas ahí mismo. **Ver detalle** abre todo.
+- **✓ Terminadas:** todo lo que terminaste, agrupado por Hoy, Ayer, Esta semana y Antes, con la hora. **Reabrir** la
+  devuelve a Pendientes.
+- Al terminar algo aparece un aviso abajo con **Deshacer** y **Ver terminadas**.
+- Si trabajas con varias marcas, filtra con los botones de marca.
+- El gerente puede elegir a cualquier persona del equipo en el menú de arriba para ver sus tareas.
 
 ## 6. Listas y planificación
 

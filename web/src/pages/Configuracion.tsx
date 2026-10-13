@@ -783,7 +783,7 @@ function ForwardOnAssign() {
       <p className="text-xs text-stone-500 dark:text-stone-400">
         Cuando asignas una iniciativa que viene de un correo, el script (cada 5 minutos) le reenvía ese correo a la persona responsable
         con el asunto "Asignación TeamFlow - asunto original", todo el texto y todos los adjuntos, y guarda el texto en la iniciativa
-        para que lo lea en Tickets. Si te la asignas a ti, no se reenvía.
+        para que lo lea en Mis tareas. Si te la asignas a ti, no se reenvía.
       </p>
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={on} onChange={(e) => toggle(e.target.checked)} />

@@ -223,7 +223,7 @@ function esc_(s) {
 
 function enlaceTarea_(p) {
   if (!p.dashboard_url) return null;
-  return p.dashboard_url.replace(/\/+$/, '') + '/tickets' + (p.task_id ? '?abrir=' + encodeURIComponent(p.task_id) : '');
+  return p.dashboard_url.replace(/\/+$/, '') + '/mis-tareas' + (p.task_id ? '?abrir=' + encodeURIComponent(p.task_id) : '');
 }
 
 function htmlReenvio_(p, m, fuera) {
