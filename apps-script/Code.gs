@@ -77,9 +77,11 @@ function buscarCorreosParaTareas() {
 
     pendientes.forEach((busqueda) => {
       const resultados = [];
-      GmailApp.search(busqueda.query, 0, MAX_RESULTADOS_BUSQUEDA).forEach((hilo) => {
+      // Sin borradores: Gmail les cambia el id cada vez que los guarda y al enviarlos.
+      GmailApp.search(busqueda.query + ' -in:drafts', 0, MAX_RESULTADOS_BUSQUEDA).forEach((hilo) => {
         // Del hilo, el último mensaje que no sea mío (si todos son míos, el primero).
-        const mensajes = hilo.getMessages();
+        const mensajes = hilo.getMessages().filter((x) => !x.isDraft());
+        if (!mensajes.length) return;
         let m = mensajes[0];
         for (let i = mensajes.length - 1; i >= 0; i--) {
           if (parsearRemitente_(mensajes[i].getFrom()).email !== yo) {
@@ -136,7 +138,7 @@ function reenviarAsignaciones() {
 }
 
 function reenviarUno_(p, yo) {
-  const m = GmailApp.getMessageById(p.gmail_message_id);
+  const m = buscarMensaje_(p, yo);
   if (!m) return { status: 'error', detail: 'No encontré el correo en Gmail (¿se borró?)' };
 
   const archivos = m.getAttachments({ includeInlineImages: false, includeAttachments: true });
@@ -171,6 +173,31 @@ function reenviarUno_(p, yo) {
     detail: fuera.length ? 'Sin adjuntar por tamaño: ' + fuera.join(', ') : null,
     content: contenido,
   };
+}
+
+// El mensaje vinculado o, si ya no existe (por ejemplo, era un borrador que luego se envió), el último
+// mensaje enviado de su hilo: de otra persona si lo hay; si todos son tuyos, el más reciente.
+function buscarMensaje_(p, yo) {
+  try {
+    const m = GmailApp.getMessageById(p.gmail_message_id);
+    if (m && !m.isDraft()) return m;
+  } catch (e) {
+    // "Not found": el id ya no existe. Se busca por el hilo.
+  }
+  if (!p.gmail_thread_id) return null;
+  let hilo;
+  try {
+    hilo = GmailApp.getThreadById(p.gmail_thread_id);
+  } catch (e) {
+    return null;
+  }
+  if (!hilo) return null;
+  const enviados = hilo.getMessages().filter((x) => !x.isDraft());
+  if (!enviados.length) return null;
+  for (let i = enviados.length - 1; i >= 0; i--) {
+    if (parsearRemitente_(enviados[i].getFrom()).email !== yo) return enviados[i];
+  }
+  return enviados[enviados.length - 1];
 }
 
 // Lo que se guarda en la iniciativa: encabezados, lista de adjuntos y el texto completo, ordenado.
