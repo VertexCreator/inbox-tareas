@@ -20,7 +20,7 @@ interface SubDraft {
 export function QuickAdd({ onClose }: { onClose: () => void }) {
   const { isAdmin } = useAuth()
   const navigate = useNavigate()
-  const { members, brands, stickers } = useBoard()
+  const { members, brands, stickers, agencies } = useBoard()
   const [mode, setMode] = useState<Mode>(isAdmin ? 'iniciativa' : 'pendiente')
   const [lists, setLists] = useState<ListRow[]>([])
 
@@ -28,6 +28,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
   const [description, setDescription] = useState('')
   const [brandIds, setBrandIds] = useState<string[]>([])
   const brand = brandIds[0] ?? ''
+  const [agency, setAgency] = useState('')
   const [due, setDue] = useState('')
   const [priority, setPriority] = useState<Priority>('P2')
   const [owner, setOwner] = useState('')
@@ -99,7 +100,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
     setError(null)
 
     if (mode === 'iniciativa') {
-      const { error } = await supabase.rpc('create_initiative', {
+      const { data: newId, error } = await supabase.rpc('create_initiative', {
         p: {
           title,
           description,
@@ -113,6 +114,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
           search_query: searchEmail ? query : null,
         },
       })
+      if (!error && agency && newId) await supabase.from('tasks').update({ agency_id: agency }).eq('id', newId)
       setBusy(false)
       if (error) return setError(error.message)
       return setDone({
@@ -135,6 +137,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
         title: title.trim(),
         notes: description.trim() || null,
         brand_ids: brandIds,
+        agency_id: agency || null,
         due_date: due || null,
         priority,
         auto_plan: !isAdmin && autoPlan,
@@ -262,6 +265,18 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
             </div>
 
             <BrandPicker value={brandIds} onChange={setBrandIds} brands={liveBrands} />
+            {agencies.some((a) => !a.archived) && (
+              <select className={input} value={agency} onChange={(e) => setAgency(e.target.value)} aria-label="Agencia">
+                <option value="">Agencia (opcional)</option>
+                {agencies
+                  .filter((a) => !a.archived)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+              </select>
+            )}
             <div className="flex flex-wrap gap-2">
               <input type="date" className={input} value={due} onChange={(e) => setDue(e.target.value)} aria-label="Fecha límite" />
               <select className={input} value={priority} onChange={(e) => setPriority(e.target.value as Priority)} aria-label="Prioridad">
@@ -279,7 +294,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
                       </option>
                     ))}
                   </select>
-                  <select className={input} value={sticker} onChange={(e) => setSticker(e.target.value)} aria-label="Estatus">
+                  <select className={input} value={sticker} onChange={(e) => setSticker(e.target.value)} aria-label="Etapa">
                     <option value="">Estatus: {stickers[0]?.name ?? 'Por revisar'}</option>
                     {stickers.map((s) => (
                       <option key={s.id} value={s.id}>

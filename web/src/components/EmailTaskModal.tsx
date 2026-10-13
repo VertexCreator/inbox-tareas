@@ -328,7 +328,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
                     </select>
                   </label>
                   <label className="space-y-1 text-xs">
-                    <span className="block text-stone-500 dark:text-stone-400">Estatus</span>
+                    <span className="block text-stone-500 dark:text-stone-400">Etapa</span>
                     <select className={input} value={sticker} onChange={(ev) => setSticker(ev.target.value)}>
                       <option value="">{stickers[0]?.name ?? 'Por revisar'}</option>
                       {stickers.slice(1).map((s) => (

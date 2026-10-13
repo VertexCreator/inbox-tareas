@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { CATEGORY_HELP, moveStage } from '../components/Stages'
 import { hasBrand } from '../components/Brands'
 import { memberName, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
-import type { Brand, LogEntry, PlanTemplate, PrioritiesConfig, Rule, Settings, Sticker, StickerCategory, TemplateItem } from '../lib/types'
+import type { Agency, Brand, LogEntry, PlanTemplate, PrioritiesConfig, Rule, Settings, Sticker, StickerCategory, TemplateItem } from '../lib/types'
 import { TagInput } from '../components/TagInput'
 import { ColorPicker } from '../components/ColorPicker'
 import { chipClass } from '../components/colors'
@@ -518,18 +519,12 @@ function SkillsCatalog({ skills, onChanged }: { skills: string[]; onChanged: () 
 }
 
 
-const CATEGORY_LABEL: Record<StickerCategory, string> = {
-  abierto: 'Sin empezar',
-  en_curso: 'En curso',
-  terminado: 'Terminado',
-  cancelado: 'Cancelado',
-}
-
-// Marcas y stickers de estatus: nombre, color, orden y cómo cuenta cada sticker.
+// Marcas, etapas del flujo y agencias.
 function BrandsStickers() {
-  const { brands, stickers, tasks, reload } = useBoard()
+  const { brands, stickers, tasks, agencies, reload } = useBoard()
   const [status, setStatus] = useState<Status>(null)
-  const [confirmSticker, setConfirmSticker] = useState<string | null>(null)
+  const [confirmStage, setConfirmStage] = useState<string | null>(null)
+  const [moveTo, setMoveTo] = useState('')
 
   const run = async (fn: () => PromiseLike<{ error: { message: string } | null }>) => {
     setStatus(null)
@@ -539,21 +534,18 @@ function BrandsStickers() {
   }
 
   const updateBrand = (b: Brand, patch: Partial<Brand>) => run(() => supabase.from('brands').update(patch).eq('id', b.id))
-  const updateSticker = (s: Sticker, patch: Partial<Sticker>) => run(() => supabase.from('status_stickers').update(patch).eq('id', s.id))
-  const move = async (i: number, d: -1 | 1) => {
-    const j = i + d
-    if (j < 0 || j >= stickers.length) return
-    const a = stickers[i]
-    const b = stickers[j]
-    await supabase.from('status_stickers').update({ position: b.position }).eq('id', a.id)
-    await run(() => supabase.from('status_stickers').update({ position: a.position }).eq('id', b.id))
+  const updateStage = (s: Sticker, patch: Partial<Sticker>) => run(() => supabase.from('status_stickers').update(patch).eq('id', s.id))
+  const move = async (s: Sticker, d: -1 | 1) => {
+    const err = await moveStage(stickers, s.id, d)
+    if (err) setStatus({ tone: 'error', text: err })
+    reload()
   }
-  const removeSticker = (s: Sticker) => {
-    const used = tasks.filter((t) => t.sticker_id === s.id).length
-    if (used) return setStatus({ tone: 'error', text: `"${s.name}" está en ${used} iniciativas. Muévelas a otro sticker antes de borrarlo.` })
-    setConfirmSticker(null)
-    run(() => supabase.from('status_stickers').delete().eq('id', s.id))
+  const removeStage = (s: Sticker) => {
+    setConfirmStage(null)
+    run(() => supabase.rpc('delete_stage', { p_id: s.id, p_move_to: moveTo || null }))
+    setMoveTo('')
   }
+  const updateAgency = (a: Agency, patch: Partial<Agency>) => run(() => supabase.from('agencies').update(patch).eq('id', a.id))
 
   return (
     <div className="space-y-4">
@@ -593,48 +585,176 @@ function BrandsStickers() {
       </Card>
 
       <Card className="p-4">
-        <SectionTitle>Stickers de estatus</SectionTitle>
+        <SectionTitle>Etapas del flujo de trabajo</SectionTitle>
         <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-          El orden es el de las columnas del tablero. "Cómo cuenta" define si suma a la carga de la persona (en curso), al avance (terminado) o a nada (cancelado).
+          Cada etapa es una columna del tablero, en este orden. "Cómo cuenta" define si suma a la carga de la persona (en curso), al avance
+          (terminado) o a nada (cancelado). También puedes crearlas, renombrarlas y ordenarlas desde el propio tablero.
         </p>
         <div className="divide-y divide-stone-200 dark:divide-stone-800">
-          {stickers.map((s, i) => (
-            <div key={s.id} className="flex flex-wrap items-center gap-3 py-2.5">
-              <span className="flex flex-col">
-                <button className="px-1 text-xs text-stone-400 hover:text-stone-700" onClick={() => move(i, -1)} aria-label="Subir">↑</button>
-                <button className="px-1 text-xs text-stone-400 hover:text-stone-700" onClick={() => move(i, 1)} aria-label="Bajar">↓</button>
-              </span>
-              <span className={`rounded-full px-2 py-0.5 text-xs ${chipClass(s.color)}`}>{s.name}</span>
-              <input
-                className={`${input} w-44 py-1`}
-                defaultValue={s.name}
-                onBlur={(e) => e.target.value.trim() && e.target.value !== s.name && updateSticker(s, { name: e.target.value.trim() })}
-                aria-label="Nombre del sticker"
-              />
-              <ColorPicker value={s.color} onChange={(c) => updateSticker(s, { color: c })} />
-              <select className={`${input} py-1 text-xs`} value={s.category} onChange={(e) => updateSticker(s, { category: e.target.value as StickerCategory })} aria-label="Cómo cuenta">
-                {(Object.keys(CATEGORY_LABEL) as StickerCategory[]).map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LABEL[c]}
-                  </option>
-                ))}
-              </select>
-              {confirmSticker === s.id ? (
-                <span className="ml-auto flex gap-1.5">
-                  <button className={`${btn} text-red-600`} onClick={() => removeSticker(s)}>Sí, borrar</button>
-                  <button className={btn} onClick={() => setConfirmSticker(null)}>No</button>
+          {stickers.map((s, i) => {
+            const used = tasks.filter((t) => t.sticker_id === s.id).length
+            return (
+              <div key={s.id} className="flex flex-wrap items-center gap-3 py-2.5">
+                <span className="flex flex-col">
+                  <button className="px-1 text-xs text-stone-400 hover:text-stone-700 disabled:opacity-30" disabled={i === 0} onClick={() => move(s, -1)} aria-label="Subir">
+                    ↑
+                  </button>
+                  <button className="px-1 text-xs text-stone-400 hover:text-stone-700 disabled:opacity-30" disabled={i === stickers.length - 1} onClick={() => move(s, 1)} aria-label="Bajar">
+                    ↓
+                  </button>
                 </span>
-              ) : (
-                <button className={`${btn} ml-auto text-red-600 dark:text-red-400`} onClick={() => setConfirmSticker(s.id)}>
-                  Borrar
-                </button>
-              )}
+                <span className={`rounded-full px-2 py-0.5 text-xs ${chipClass(s.color)}`}>{s.name}</span>
+                <input
+                  key={s.name}
+                  className={`${input} w-44 py-1`}
+                  defaultValue={s.name}
+                  onBlur={(e) => e.target.value.trim() && e.target.value !== s.name && updateStage(s, { name: e.target.value.trim() })}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+                  aria-label="Nombre de la etapa"
+                />
+                <ColorPicker value={s.color} onChange={(c) => updateStage(s, { color: c })} />
+                <select className={`${input} py-1 text-xs`} value={s.category} onChange={(e) => updateStage(s, { category: e.target.value as StickerCategory })} aria-label="Cómo cuenta">
+                  {(Object.keys(CATEGORY_HELP) as StickerCategory[]).map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_HELP[c]}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs text-stone-500">{used} iniciativas</span>
+                {confirmStage === s.id ? (
+                  <span className="ml-auto flex flex-wrap items-center gap-1.5">
+                    {used > 0 && (
+                      <select className={`${input} py-1 text-xs`} value={moveTo} onChange={(e) => setMoveTo(e.target.value)} aria-label="Mover sus iniciativas a">
+                        <option value="">Sus {used} iniciativas pasan a…</option>
+                        {stickers
+                          .filter((x) => x.id !== s.id)
+                          .map((x) => (
+                            <option key={x.id} value={x.id}>
+                              {x.name}
+                            </option>
+                          ))}
+                      </select>
+                    )}
+                    <button className={`${btn} text-red-600`} disabled={used > 0 && !moveTo} onClick={() => removeStage(s)}>
+                      Sí, borrar
+                    </button>
+                    <button className={btn} onClick={() => setConfirmStage(null)}>
+                      No
+                    </button>
+                  </span>
+                ) : (
+                  <button className={`${btn} ml-auto text-red-600 dark:text-red-400`} disabled={stickers.length <= 1} onClick={() => { setMoveTo(''); setConfirmStage(s.id) }}>
+                    Borrar
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <NewStageRow nextPosition={stickers.length} onCreated={reload} />
+      </Card>
+
+      <Card className="p-4">
+        <SectionTitle>Agencias</SectionTitle>
+        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+          Las agencias con las que trabaja el equipo. Agrega sus dominios de correo (agenciaxyz.com): los correos que lleguen de ahí, y los
+          pendientes e iniciativas que salgan de ellos, quedan con su agencia. Al agregar un dominio se aplica también a lo que ya existe.
+        </p>
+        <div className="divide-y divide-stone-200 dark:divide-stone-800">
+          {agencies.map((a) => (
+            <div key={a.id} className={`flex flex-wrap items-center gap-3 py-2.5 ${a.archived ? 'opacity-60' : ''}`}>
+              <input
+                className={`${input} w-48 py-1`}
+                defaultValue={a.name}
+                onBlur={(e) => e.target.value.trim() && e.target.value !== a.name && updateAgency(a, { name: e.target.value.trim() })}
+                aria-label="Nombre de la agencia"
+              />
+              <ColorPicker value={a.color} onChange={(c) => updateAgency(a, { color: c })} />
+              <span className="text-xs text-stone-500">{tasks.filter((t) => t.agency_id === a.id).length} iniciativas</span>
+              <button className={`${btn} ml-auto`} onClick={() => updateAgency(a, { archived: !a.archived })}>
+                {a.archived ? 'Reactivar' : 'Archivar'}
+              </button>
+              <div className="basis-full">
+                <TagInput
+                  id={`domains-${a.id}`}
+                  values={a.domains ?? []}
+                  onChange={(v) => updateAgency(a, { domains: v })}
+                  normalize={(v) => v.toLowerCase().replace(/^.*@/, '').trim()}
+                  placeholder="Dominios: agenciaxyz.com, mediosabc.com…"
+                />
+              </div>
             </div>
           ))}
         </div>
-        <StatusText status={status} />
+        <NewAgencyRow onCreated={reload} />
       </Card>
+      <StatusText status={status} />
     </div>
+  )
+}
+
+function NewStageRow({ nextPosition, onCreated }: { nextPosition: number; onCreated: () => void }) {
+  const [name, setName] = useState('')
+  const [color, setColor] = useState('blue')
+  const [category, setCategory] = useState<StickerCategory>('en_curso')
+  const [error, setError] = useState<string | null>(null)
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return setError('Ponle un nombre a la etapa.')
+    const { error } = await supabase.from('status_stickers').insert({ name: name.trim(), color, category, position: nextPosition })
+    if (error) return setError(error.message.includes('duplicate') ? 'Ya existe una etapa con ese nombre.' : error.message)
+    setName('')
+    setError(null)
+    onCreated()
+  }
+  return (
+    <form onSubmit={submit} className="mt-3 flex flex-wrap items-center gap-3 border-t border-stone-200 pt-3 dark:border-stone-800" noValidate>
+      <input className={`${input} w-52`} placeholder="Nueva etapa, ej. Esperando cliente" value={name} onChange={(e) => { setName(e.target.value); setError(null) }} aria-label="Nombre de la nueva etapa" />
+      <ColorPicker value={color} onChange={setColor} />
+      <select className={`${input} text-xs`} value={category} onChange={(e) => setCategory(e.target.value as StickerCategory)} aria-label="Cómo cuenta">
+        {(Object.keys(CATEGORY_HELP) as StickerCategory[]).map((c) => (
+          <option key={c} value={c}>
+            {CATEGORY_HELP[c]}
+          </option>
+        ))}
+      </select>
+      <button className={btnPrimary} type="submit">
+        + Agregar etapa
+      </button>
+      {error && <span className="text-[13px] text-red-600 dark:text-red-400">{error}</span>}
+    </form>
+  )
+}
+
+function NewAgencyRow({ onCreated }: { onCreated: () => void }) {
+  const [name, setName] = useState('')
+  const [color, setColor] = useState('gray')
+  const [domain, setDomain] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return setError('Ponle un nombre a la agencia.')
+    const domains = domain
+      .split(/[,\s]+/)
+      .map((d) => d.toLowerCase().replace(/^.*@/, '').trim())
+      .filter(Boolean)
+    const { error } = await supabase.from('agencies').insert({ name: name.trim(), color, domains })
+    if (error) return setError(error.message.includes('duplicate') ? 'Esa agencia ya existe.' : error.message)
+    setName('')
+    setDomain('')
+    setError(null)
+    onCreated()
+  }
+  return (
+    <form onSubmit={submit} className="mt-3 flex flex-wrap items-center gap-3 border-t border-stone-200 pt-3 dark:border-stone-800" noValidate>
+      <input className={`${input} w-52`} placeholder="Nueva agencia" value={name} onChange={(e) => { setName(e.target.value); setError(null) }} aria-label="Nombre de la nueva agencia" />
+      <input className={`${input} w-56`} placeholder="Dominio, ej. agenciaxyz.com" value={domain} onChange={(e) => setDomain(e.target.value)} aria-label="Dominio de correo" />
+      <ColorPicker value={color} onChange={setColor} />
+      <button className={btnPrimary} type="submit">
+        + Agregar agencia
+      </button>
+      {error && <span className="text-[13px] text-red-600 dark:text-red-400">{error}</span>}
+    </form>
   )
 }
 
@@ -714,7 +834,7 @@ function EmailSearchDays() {
 
 const TABS = [
   { id: 'prioridades', label: 'Prioridades y resumen' },
-  { id: 'marcas', label: 'Marcas y stickers' },
+  { id: 'marcas', label: 'Marcas, etapas y agencias' },
   { id: 'plantillas', label: 'Plantillas' },
   { id: 'habilidades', label: 'Habilidades' },
   { id: 'script', label: 'Script de Gmail' },

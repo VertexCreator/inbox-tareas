@@ -28,6 +28,14 @@ export interface Brand {
   aliases: string[]
 }
 
+export interface Agency {
+  id: string
+  name: string
+  color: string
+  domains: string[]
+  archived: boolean
+}
+
 export type StickerCategory = 'abierto' | 'en_curso' | 'terminado' | 'cancelado'
 
 export interface Sticker {
@@ -58,6 +66,7 @@ export interface Task {
   completed_at: string | null
   brand_id: string | null
   brand_ids: string[]
+  agency_id: string | null
   sticker_id: string | null
   observation: string | null
   observation_at: string | null
@@ -102,6 +111,7 @@ export interface ListItem {
   created_by: string | null
   brand_id: string | null
   brand_ids: string[]
+  agency_id: string | null
   suggested_brand: string | null
   auto_plan: boolean
   created_at: string
@@ -202,6 +212,7 @@ export interface Email {
   received_at: string | null
   brand_id: string | null
   brand_ids: string[]
+  agency_id: string | null
   suggested_brand: string | null
   mentioned: boolean
   addressed: 'para' | 'copia' | 'lista' | null

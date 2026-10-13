@@ -10,12 +10,12 @@ import { Card, Empty, SectionTitle, btn, input } from '../components/ui'
 // Vista tipo ticket: todo lo que tiene que hacer una persona, con su desglose.
 export function Tickets() {
   const { member, isAdmin } = useAuth()
-  const { tasks, subtasks, members, brands, stickers, reload } = useBoard()
+  const { tasks, subtasks, members, brands, stickers, agencies, reload } = useBoard()
   const [who, setWho] = useState<string>('')
   const [brand, setBrand] = useState('')
   const [showClosed, setShowClosed] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
-  const ctx: BoardCtx = { members, brands, stickers, subtasks }
+  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies }
 
   const personId = (isAdmin && who) || member?.id || ''
   const person = members.find((m) => m.id === personId)
@@ -169,7 +169,7 @@ function Ticket({ task, ctx, onOpen, onChanged, canEdit }: { task: Task; ctx: Bo
               className={`${input} py-1 text-xs`}
               value={task.sticker_id ?? ''}
               onChange={(e) => run(() => updateTask(task.id, { sticker_id: e.target.value }))}
-              aria-label="Cambiar estatus"
+              aria-label="Cambiar etapa"
             >
               {ctx.stickers.map((s) => (
                 <option key={s.id} value={s.id}>

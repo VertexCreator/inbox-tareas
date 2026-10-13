@@ -13,7 +13,8 @@ import {
   updateSubtask,
   updateTask,
 } from '../lib/data'
-import type { Brand, Member, Sticker, Subtask, Task } from '../lib/types'
+import type { Agency, Brand, Member, Sticker, Subtask, Task } from '../lib/types'
+import { AgencyChip } from './Filters'
 import { chipClass } from './colors'
 import { LinkedEmail } from './LinkedEmail'
 import { BrandChips, BrandPicker, brandIdsOf } from './Brands'
@@ -24,6 +25,7 @@ export interface BoardCtx {
   brands: Brand[]
   stickers: Sticker[]
   subtasks: Subtask[]
+  agencies?: Agency[]
 }
 
 export function StickerPill({ sticker }: { sticker?: Sticker | null }) {
@@ -52,7 +54,10 @@ export function InitiativeCard({ task, ctx, onOpen, showBrand = true }: { task: 
       } ${closed ? 'opacity-70' : ''}`}
     >
       <div className="flex items-center justify-between gap-2">
-        {showBrand ? <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} /> : <span />}
+        <span className="flex flex-wrap items-center gap-1">
+          {showBrand && <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />}
+          <AgencyChip agency={ctx.agencies?.find((a) => a.id === task.agency_id)} />
+        </span>
         {task.priority === 'P1' && <PriorityBadge priority="P1" />}
       </div>
       <div className={`mt-1 text-[13px] font-medium ${sticker?.category === 'cancelado' ? 'line-through' : ''}`}>{task.title}</div>
@@ -157,7 +162,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
         {error && <div className="mt-2 rounded-lg bg-red-50 p-2 text-[13px] text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
 
         <section className="mt-4">
-          <div className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Estatus{!canStatus && ' (lo cambia el responsable o el gerente)'}</div>
+          <div className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Etapa{!canStatus && ' (la cambia el responsable o el gerente)'}</div>
           <div className="flex flex-wrap gap-1.5">
             {ctx.stickers.map((s) => {
               const active = s.id === task.sticker_id
@@ -213,6 +218,25 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
               <span className={isOverdue(task.due_date, task.status === 'hecho') ? 'text-red-600' : ''}>{shortDate(task.due_date)}</span>
             )}
           </label>
+          {(isAdmin || task.agency_id) && (ctx.agencies?.length ?? 0) > 0 && (
+            <label className="space-y-1">
+              <span className="block text-xs text-stone-500 dark:text-stone-400">Agencia</span>
+              {isAdmin ? (
+                <select className={`${input} w-full`} value={task.agency_id ?? ''} onChange={(e) => run(() => updateTask(task.id, { agency_id: e.target.value || null }))}>
+                  <option value="">Sin agencia</option>
+                  {ctx.agencies
+                    ?.filter((a) => !a.archived || a.id === task.agency_id)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                </select>
+              ) : (
+                <AgencyChip agency={ctx.agencies?.find((a) => a.id === task.agency_id)} />
+              )}
+            </label>
+          )}
         </section>
 
         {pending && isAdmin && (

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, uniqueChannel } from './supabase'
-import type { Brand, Member, Sticker, Subtask, Task } from './types'
+import type { Agency, Brand, Member, Sticker, Subtask, Task } from './types'
 
 // Tareas, subtareas y equipo juntos: la carga de cada miembro cambia con cada tarea.
 // Se recarga sola cuando alguien del equipo cambia una tarea o subtarea (tiempo real).
@@ -10,17 +10,20 @@ export function useBoard() {
   const [members, setMembers] = useState<Member[]>([])
   const [brands, setBrands] = useState<Brand[]>([])
   const [stickers, setStickers] = useState<Sticker[]>([])
+  const [agencies, setAgencies] = useState<Agency[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
-    const [t, m, st, b, sk] = await Promise.all([
+    const [t, m, st, b, sk, ag] = await Promise.all([
       supabase.from('tasks').select('*').order('created_at', { ascending: false }),
       supabase.from('member_load').select('*').order('name'),
       supabase.from('subtasks').select('*').order('position'),
       supabase.from('brands').select('*').order('name'),
       supabase.from('status_stickers').select('*').order('position'),
+      supabase.from('agencies').select('*').order('name'),
     ])
+    if (ag.data) setAgencies(ag.data as Agency[])
     if (b.data) setBrands(b.data as Brand[])
     if (sk.data) setStickers(sk.data as Sticker[])
     const err = t.error ?? m.error ?? st.error ?? b.error ?? sk.error
@@ -39,13 +42,14 @@ export function useBoard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'subtasks' }, () => reload())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'brands' }, () => reload())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'status_stickers' }, () => reload())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'agencies' }, () => reload())
       .subscribe()
     return () => {
       supabase.removeChannel(channel)
     }
   }, [reload])
 
-  return { tasks, subtasks, members, brands, stickers, loading, error, reload }
+  return { tasks, subtasks, members, brands, stickers, agencies, loading, error, reload }
 }
 
 export async function approveTask(taskId: string) {
@@ -89,7 +93,7 @@ export async function updateSubtask(id: string, patch: Partial<Pick<Subtask, 'do
 
 export async function updateTask(
   id: string,
-  patch: Partial<Pick<Task, 'due_date' | 'priority' | 'title' | 'description' | 'sticker_id' | 'observation' | 'brand_id' | 'brand_ids' | 'assignee_id'>>,
+  patch: Partial<Pick<Task, 'due_date' | 'priority' | 'title' | 'description' | 'sticker_id' | 'observation' | 'brand_id' | 'brand_ids' | 'agency_id' | 'assignee_id'>>,
 ) {
   const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) throw new Error(error.message)

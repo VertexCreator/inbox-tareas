@@ -1,44 +1,76 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
-import { isOverdue, progress, useBoard } from '../lib/data'
+import { isOverdue, progress, updateTask, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Brand, StickerCategory, Task } from '../lib/types'
+import { EMPTY_FILTERS, FilterBar, matches, useStored } from '../components/Filters'
+import { NewStageColumn, StageHeader } from '../components/Stages'
 import { chipClass, dotClass } from '../components/colors'
 import { ColorPicker } from '../components/ColorPicker'
 import { InitiativeCard, InitiativeDetail, type BoardCtx } from '../components/Initiative'
 import { Card, btn, btnPrimary, input } from '../components/ui'
-import { BrandPicker, hasBrand, isMultibrand } from '../components/Brands'
+import { BrandPicker, brandIdsOf, hasBrand, isMultibrand } from '../components/Brands'
 
 const ALL = 'todas'
 const MULTI = 'multi'
 
 export function Tablero() {
-  const { isAdmin } = useAuth()
-  const { tasks, subtasks, members, brands, stickers, error, reload } = useBoard()
+  const { isAdmin, member } = useAuth()
+  const { tasks, subtasks, members, brands, stickers, agencies, error, reload } = useBoard()
   const [brandTab, setBrandTab] = useState<string>(ALL)
-  const [person, setPerson] = useState('')
-  const [query, setQuery] = useState('')
+  const [filters, setFilters] = useStored('teamflow.tablero.filtros', EMPTY_FILTERS)
   const [hideEmpty, setHideEmpty] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
-  const [addingSticker, setAddingSticker] = useState(false)
+  const [stageError, setStageError] = useState<string | null>(null)
+  // Arrastrar tarjetas entre etapas: la tarjeta se mueve al instante y se guarda en la base.
+  const [dragId, setDragId] = useState<string | null>(null)
+  const [overStage, setOverStage] = useState<string | null>(null)
+  const [moved, setMoved] = useState<Record<string, string>>({})
+  const stageOf = (t: Task) => moved[t.id] ?? t.sticker_id
+  const canMove = (t: Task) => isAdmin || (!!member && (t.assignee_id ?? t.suggested_assignee_id) === member.id)
+  const drop = async (stageId: string) => {
+    const t = tasks.find((x) => x.id === dragId)
+    setDragId(null)
+    setOverStage(null)
+    if (!t || stageOf(t) === stageId) return
+    if (!canMove(t)) return setStageError('Solo el responsable o el gerente pueden mover esta iniciativa.')
+    setStageError(null)
+    setMoved((m) => ({ ...m, [t.id]: stageId }))
+    try {
+      await updateTask(t.id, { sticker_id: stageId })
+    } catch (e) {
+      setStageError(e instanceof Error ? e.message : 'No se pudo mover.')
+    }
+    setMoved((m) => {
+      const next = { ...m }
+      delete next[t.id]
+      return next
+    })
+    reload()
+  }
 
-  const ctx: BoardCtx = { members, brands, stickers, subtasks }
+  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies }
   const liveBrands = brands.filter((b) => !b.archived)
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase()
     return tasks.filter((t) => {
       if (brandTab === 'sin' && t.brand_id) return false
       if (brandTab === MULTI && !isMultibrand(t)) return false
       if (brandTab !== ALL && brandTab !== 'sin' && brandTab !== MULTI && !hasBrand(t, brandTab)) return false
-      if (person && (t.assignee_id ?? t.suggested_assignee_id) !== person && !subtasks.some((s) => s.task_id === t.id && s.assignee_id === person)) return false
-      if (q && !`${t.title} ${t.description ?? ''} ${t.observation ?? ''}`.toLowerCase().includes(q)) return false
-      return true
+      const owner = t.assignee_id ?? t.suggested_assignee_id
+      const people = [owner, ...subtasks.filter((s) => s.task_id === t.id).map((s) => s.assignee_id)].filter((x): x is string => !!x)
+      return matches(filters, {
+        text: `${t.title} ${t.description ?? ''} ${t.observation ?? ''}`,
+        brandIds: brandIdsOf(t),
+        agencyId: t.agency_id,
+        priority: t.priority,
+        people,
+      })
     })
-  }, [tasks, subtasks, brandTab, person, query])
+  }, [tasks, subtasks, brandTab, filters])
 
-  const columns = stickers.filter((s) => !hideEmpty || visible.some((t) => t.sticker_id === s.id))
+  const columns = stickers.filter((s) => !hideEmpty || visible.some((t) => stageOf(t) === s.id))
   const open = tasks.find((t) => t.id === openId)
   const noBrand = tasks.filter((t) => !t.brand_id).length
   const multi = tasks.filter(isMultibrand).length
@@ -47,31 +79,11 @@ export function Tablero() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-medium">Tablero</h1>
-        <input
-          id="board-search"
-          className={`${input} w-52`}
-          placeholder="Buscar iniciativa…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select className={input} value={person} onChange={(e) => setPerson(e.target.value)} aria-label="Filtrar por persona">
-          <option value="">Todo el equipo</option>
-          {members
-            .filter((m) => m.active)
-            .map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-        </select>
         <label className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
           <input type="checkbox" checked={hideEmpty} onChange={(e) => setHideEmpty(e.target.checked)} />
           Ocultar columnas vacías
         </label>
         <div className="ml-auto flex gap-2">
-          <button className={btn} onClick={() => setAddingSticker((v) => !v)}>
-            + Sticker
-          </button>
           {isAdmin && (
             <button className={btnPrimary} onClick={() => setCreating((v) => !v)}>
               {creating ? 'Cerrar' : 'Nueva iniciativa'}
@@ -80,7 +92,9 @@ export function Tablero() {
         </div>
       </div>
 
-      {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
+      <FilterBar value={filters} onChange={setFilters} brands={brands} agencies={agencies} members={members} hide={['brands']} placeholder="Buscar iniciativa…" />
+
+      {(error || stageError) && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{stageError ?? error}</div>}
 
       <div className="flex flex-wrap items-center gap-1.5 border-b border-stone-200 pb-2 dark:border-stone-800">
         <BrandTab active={brandTab === ALL} onClick={() => setBrandTab(ALL)} label="Todas las marcas" count={tasks.length} />
@@ -99,7 +113,6 @@ export function Tablero() {
         {isAdmin && <NewBrand onCreated={(id) => setBrandTab(id)} />}
       </div>
 
-      {addingSticker && <NewSticker nextPosition={stickers.length} onDone={() => setAddingSticker(false)} />}
       {creating && isAdmin && (
         <NewInitiative
           ctx={ctx}
@@ -118,21 +131,49 @@ export function Tablero() {
       )}
 
       <div className="-mx-4 overflow-x-auto px-4 pb-2">
-        <div className="flex gap-3" style={{ minWidth: `${columns.length * 252}px` }}>
+        <div className="flex items-start gap-3" style={{ minWidth: `${(columns.length + (isAdmin ? 1 : 0)) * 252}px` }}>
           {columns.map((s) => {
-            const items = visible.filter((t) => t.sticker_id === s.id)
+            const items = visible.filter((t) => stageOf(t) === s.id)
             return (
-              <section key={s.id} className="flex w-60 shrink-0 flex-col gap-2 rounded-xl bg-stone-100 p-2.5 dark:bg-stone-900/60">
-                <div className="flex items-center justify-between px-0.5">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${chipClass(s.color)}`}>{s.name}</span>
-                  <span className="text-xs text-stone-500">{items.length}</span>
-                </div>
+              <section
+                key={s.id}
+                onDragOver={(e) => {
+                  if (!dragId) return
+                  e.preventDefault()
+                  setOverStage(s.id)
+                }}
+                onDragLeave={() => setOverStage((o) => (o === s.id ? null : o))}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  drop(s.id)
+                }}
+                className={`flex min-h-32 w-60 shrink-0 flex-col gap-2 rounded-xl p-2.5 transition ${
+                  overStage === s.id ? 'bg-indigo-50 ring-2 ring-indigo-300 dark:bg-indigo-950/40 dark:ring-indigo-800' : 'bg-stone-100 dark:bg-stone-900/60'
+                }`}
+              >
+                <StageHeader stage={s} stages={stickers} count={tasks.filter((t) => stageOf(t) === s.id).length} isAdmin={isAdmin} onChanged={reload} onError={setStageError} />
                 {items.map((t) => (
-                  <InitiativeCard key={t.id} task={t} ctx={ctx} onOpen={() => setOpenId(t.id)} showBrand={brandTab === ALL || brandTab === 'sin' || isMultibrand(t)} />
+                  <div
+                    key={t.id}
+                    draggable={canMove(t)}
+                    onDragStart={(e) => {
+                      setDragId(t.id)
+                      e.dataTransfer.effectAllowed = 'move'
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null)
+                      setOverStage(null)
+                    }}
+                    className={`${canMove(t) ? 'cursor-grab active:cursor-grabbing' : ''} ${dragId === t.id ? 'opacity-40' : ''}`}
+                  >
+                    <InitiativeCard task={t} ctx={ctx} onOpen={() => setOpenId(t.id)} showBrand={brandTab === ALL || brandTab === 'sin' || isMultibrand(t)} />
+                  </div>
                 ))}
+                {items.length === 0 && <div className="rounded-lg border border-dashed border-stone-300 px-2 py-4 text-center text-[11px] text-stone-400 dark:border-stone-700">Arrastra aquí</div>}
               </section>
             )
           })}
+          {isAdmin && <NewStageColumn nextPosition={stickers.length} onCreated={reload} />}
         </div>
       </div>
 
@@ -204,7 +245,7 @@ function BrandOverview({ brands, tasks, ctx, onPick }: { brands: Brand[]; tasks:
   )
 }
 
-// Vista de una marca: avance, conteo por sticker y subtareas.
+// Vista de una marca: avance, conteo por etapa y subtareas.
 function BrandSummary({ tasks, ctx, brand, label }: { tasks: Task[]; ctx: BoardCtx; brand?: Brand; label?: string }) {
   const p = progress(tasks, ctx.stickers)
   const subs = ctx.subtasks.filter((s) => tasks.some((t) => t.id === s.task_id))
@@ -284,62 +325,6 @@ function NewBrand({ onCreated }: { onCreated: (id: string) => void }) {
   )
 }
 
-const CATEGORY_HELP: Record<StickerCategory, string> = {
-  abierto: 'Sin empezar',
-  en_curso: 'En curso (cuenta como carga)',
-  terminado: 'Terminado (cuenta como avance)',
-  cancelado: 'Cancelado (no cuenta)',
-}
-
-function NewSticker({ nextPosition, onDone }: { nextPosition: number; onDone: () => void }) {
-  const [name, setName] = useState('')
-  const [color, setColor] = useState('blue')
-  const [category, setCategory] = useState<StickerCategory>('en_curso')
-  const [error, setError] = useState<string | null>(null)
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) return setError('Ponle un nombre al sticker.')
-    const { error } = await supabase.from('status_stickers').insert({ name: name.trim(), color, category, position: nextPosition })
-    if (error) return setError(error.message.includes('duplicate') ? 'Ya existe un sticker con ese nombre.' : error.message)
-    onDone()
-  }
-
-  return (
-    <Card className="p-3">
-      <form onSubmit={submit} className="flex flex-wrap items-center gap-3" noValidate>
-        <input
-          id="new-sticker"
-          autoFocus
-          className={input}
-          placeholder="Esperando cliente"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value)
-            setError(null)
-          }}
-        />
-        <ColorPicker value={color} onChange={setColor} />
-        <select className={input} value={category} onChange={(e) => setCategory(e.target.value as StickerCategory)} aria-label="Cómo cuenta">
-          {(Object.keys(CATEGORY_HELP) as StickerCategory[]).map((c) => (
-            <option key={c} value={c}>
-              {CATEGORY_HELP[c]}
-            </option>
-          ))}
-        </select>
-        {name.trim() && <span className={`rounded-full px-2 py-0.5 text-xs ${chipClass(color)}`}>{name.trim()}</span>}
-        <button className={btnPrimary} type="submit">
-          Crear sticker
-        </button>
-        <button className={btn} type="button" onClick={onDone}>
-          Cancelar
-        </button>
-        {error && <span className="text-[13px] text-red-600 dark:text-red-400">{error}</span>}
-      </form>
-    </Card>
-  )
-}
-
 function NewInitiative({ ctx, defaultBrand, onCreated }: { ctx: BoardCtx; defaultBrand: string; onCreated: () => void }) {
   const [brandIds, setBrandIds] = useState<string[]>(defaultBrand ? [defaultBrand] : [])
   const [title, setTitle] = useState('')
@@ -395,7 +380,7 @@ function NewInitiative({ ctx, defaultBrand, onCreated }: { ctx: BoardCtx; defaul
             ))}
           </select>
           <input type="date" className={input} value={due} onChange={(e) => setDue(e.target.value)} aria-label="Fecha límite" />
-          <select className={input} value={sticker} onChange={(e) => setSticker(e.target.value)} aria-label="Estatus">
+          <select className={input} value={sticker} onChange={(e) => setSticker(e.target.value)} aria-label="Etapa">
             {ctx.stickers.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}

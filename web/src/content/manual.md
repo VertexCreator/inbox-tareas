@@ -3,7 +3,7 @@
 Teamflow es la primera herramienta de la línea **Flow**, las herramientas corporativas de Dimassi.
 
 Este dashboard reúne en un solo lugar las iniciativas de marketing del equipo, organizadas por marca, con su
-estatus, responsable, fechas y subtareas. Los pendientes nacen en las listas (o desde los correos del gerente)
+etapa, responsable, fechas y subtareas. Los pendientes nacen en las listas (o desde los correos del gerente)
 y se convierten en iniciativas con ayuda del agente.
 
 ## 1. Entrar
@@ -25,7 +25,7 @@ Usa el botón **+ Nueva tarea** de la barra de arriba, desde cualquier página, 
   prioridad. Con **Pedir plan al agente** marcado, el Planificador arma en la próxima media hora la tarea, las
   subtareas y las personas recomendadas, y la gerente lo confirma. En la lista verás "Plan en camino ✦".
 - **Gerente:** tiene dos opciones.
-  - **Iniciativa directa:** va al tablero con marca, responsable, fecha, estatus y subtareas. Si no eliges
+  - **Iniciativa directa:** va al tablero con marca, responsable, fecha, etapa y subtareas. Si no eliges
     responsable, el agente sugiere uno.
   - **Pendiente para planificar:** arma la recomendación al instante y te lleva a revisarla.
 
@@ -48,7 +48,8 @@ en la actividad, y el resumen del día avisa si vence.
 | **Marca** | Cada cliente o marca que maneja el equipo (por ejemplo Peros, Asperox). Tiene un color. |
 | **Iniciativa** | Un trabajo concreto de una marca: "Video de producto para TikTok". Es cada tarjeta del tablero. |
 | **Multimarca** | Una iniciativa que involucra a varias marcas a la vez (un lanzamiento conjunto de Vaseline y Axe). Lleva la etiqueta **Multimarca** y las marcas que la forman; la primera (★) es la principal. |
-| **Sticker de estatus** | Dónde está la iniciativa: Por revisar, En proceso, Falta información, En diseño, Revisión de presupuesto, Listo, Publicada, Por pagar, Cancelado… Cada sticker es una columna del tablero. |
+| **Etapa** | Dónde está la iniciativa en el flujo de trabajo: Por revisar, En proceso, Falta información, En diseño, Revisión de presupuesto, Listo, Publicada, Por pagar, Cancelado… Cada etapa es una columna del tablero, y el gerente crea las que necesite. |
+| **Agencia** | Una agencia con la que trabaja el equipo (creativa, de medios, de eventos). Sus correos, y lo que sale de ellos, quedan con su agencia. |
 | **Responsable** | La persona a cargo de la iniciativa. Solo pueden serlo quienes el gerente autorizó. |
 | **Subtarea** | Un paso de la iniciativa ("Guion", "Edición"), con su propia persona y fecha. |
 | **Observación** | Un aviso visible en la tarjeta: "Falta el logo en vectores del cliente". |
@@ -61,31 +62,37 @@ Arriba hay una pestaña por marca:
 - **Todas las marcas:** muestra una tarjeta por marca con su avance (% terminado), las vencidas y las que
   tienen observación. Haz clic en una tarjeta para entrar a esa marca.
 - **Una marca:** muestra solo sus iniciativas, con la barra de avance (iniciativas y subtareas terminadas) y
-  cuántas hay en cada sticker.
+  cuántas hay en cada etapa.
 - **Multimarca:** junta las iniciativas con dos o más marcas. Cada una aparece también en la pestaña de **cada**
   una de sus marcas y cuenta en el avance de todas ellas.
 - **Sin marca:** aparece si hay iniciativas a las que todavía no se les asignó marca.
 
-Debajo están las columnas, una por sticker, en el orden que definió el gerente. Desplázate a los lados para ver
+Debajo están las columnas, una por etapa, en el orden que definió el gerente. Desplázate a los lados para ver
 todas. Cada tarjeta muestra:
 
-- marca, nombre y descripción corta;
+- marca y agencia, nombre y descripción corta;
 - la observación, en amarillo, si la hay;
 - la barra de subtareas hechas;
 - la fecha límite (en rojo si venció) y la persona responsable.
 
-**Herramientas de la barra superior del tablero:**
+**Mover una iniciativa de etapa:** arrástrala a otra columna. Pueden hacerlo su responsable y el gerente.
+También se cambia desde su detalle.
 
-- **Buscar iniciativa:** filtra por nombre, descripción u observación.
-- **Todo el equipo / una persona:** muestra solo las iniciativas donde esa persona es responsable o tiene
-  subtareas.
-- **Ocultar columnas vacías:** esconde los stickers que no tienen iniciativas.
-- **+ Sticker:** cualquiera puede crear un sticker nuevo (por ejemplo "Esperando cliente"). Eliges nombre,
-  color y cómo cuenta:
+**Filtros:** busca por nombre, descripción u observación, y filtra por **agencia**, **persona** (responsable o
+con subtareas) y **prioridad** (P1, P2, P3). Las marcas se eligen con las pestañas de arriba. Los filtros activos
+se ven como etiquetas con **×**; **Limpiar filtros** los quita todos. El tablero los recuerda en este navegador.
+
+**Etapas (solo el gerente):**
+
+- **+ Nueva etapa**, al final de las columnas: eliges nombre, color y cómo cuenta:
   - *Sin empezar*,
   - *En curso*: suma a la carga de la persona,
   - *Terminado*: suma al avance de la marca,
   - *Cancelado*: no cuenta.
+- Clic en el nombre de la etapa (o en **⋯**): **Renombrar**, cambiar **color** y **cómo cuenta**, **mover** la
+  columna a la izquierda o a la derecha, o **borrar** la etapa. Si tiene iniciativas, eliges a qué etapa pasan.
+  Doble clic en el nombre también lo renombra.
+- **Ocultar columnas vacías** esconde las etapas sin iniciativas.
 - **+ Marca** y **Nueva iniciativa:** solo el gerente.
 
 ## 4. Detalle de una iniciativa
@@ -95,7 +102,8 @@ haciendo clic fuera.
 
 | Campo | Quién lo cambia |
 |---|---|
-| Estatus (sticker) | El responsable y el gerente. Haz clic en el sticker nuevo. |
+| Etapa | El responsable y el gerente. Haz clic en la etapa nueva o arrastra la tarjeta en el tablero. |
+| Agencia | Solo el gerente. Se pone sola si el correo vino de una agencia. |
 | Observación | El responsable y el gerente. Escribe y pulsa **Guardar observación**; **Quitar** la borra. |
 | Subtareas | El responsable y el gerente crean, editan, asignan, fechan y borran. Cada persona marca las suyas. |
 | Marca, nombre, descripción, responsable, fecha límite | Solo el gerente. |
@@ -106,8 +114,8 @@ Los cambios se guardan solos y aparecen en las pantallas de todos en pocos segun
 
 Es tu lista personal de trabajo.
 
-- **Iniciativas a cargo:** cada una con su marca, sticker, fecha y descripción.
-  - Cambia el estatus desde el menú del ticket.
+- **Iniciativas a cargo:** cada una con su marca, etapa, fecha y descripción.
+  - Cambia la etapa desde el menú del ticket.
   - Agrega subtareas en la fila **+ Nueva subtarea**. Si no eliges a otra persona, quedan a tu nombre.
   - Marca las subtareas a medida que las terminas. Todo eso suma al avance de la marca en el tablero.
 - **Subtareas en iniciativas de otros:** lo que te asignaron dentro de iniciativas de un compañero. Haz clic en
@@ -121,7 +129,27 @@ Es tu lista personal de trabajo.
 
 1. Entra a **Listas** y elige una lista (cada proyecto o campaña tiene la suya).
 2. En la fila de abajo escribe el pendiente.
-3. Si quieres, agrega detalles, marca, fecha y prioridad. Pulsa **Agregar**.
+3. Si quieres, agrega detalles, marca, agencia, fecha y prioridad. Pulsa **Agregar**.
+
+**Todas las listas** junta los pendientes de todas las listas en una sola vista.
+
+**Vistas** (arriba a la derecha; se recuerda la última que usaste):
+
+| Vista | Qué muestra |
+|---|---|
+| **Lista** | La tabla de siempre: pendiente, estado, responsable, fecha límite y acciones. |
+| **Kanban** | Una columna por estado: Sin planificar, Recomendación lista, En tareas, Terminado (y Descartado si lo muestras). |
+| **Por marca** | Un grupo por marca con su avance y sus vencidos. Los multimarca aparecen en cada una de sus marcas. |
+| **Por persona** | Un grupo por responsable, y "Sin responsable" para lo que falta asignar. |
+| **Por prioridad** | P1, P2, P3 y sin prioridad. |
+| **Por agencia** | Un grupo por agencia, y "Sin agencia". |
+| **Calendario** | El mes con cada pendiente en su fecha límite (rojo si venció, tachado si se terminó). Clic en un día para ver sus pendientes; abajo, los que no tienen fecha. |
+
+Los grupos se pliegan con un clic en su nombre. En todas las vistas el gerente puede **Planificar** o **Revisar
+plan** desde la tarjeta.
+
+**Filtros:** búsqueda, **marca** (una o varias, o "Sin marca"), **agencia**, **persona** (responsable o con
+subtareas, o "Sin asignar") y **prioridad**. Se combinan entre sí y valen para todas las vistas.
 
 Mientras no esté planificado, puedes borrar tu propio pendiente. La lista **Desde correos** la llena el agente
 con lo que detecta en el inbox del gerente.
@@ -210,7 +238,7 @@ Algunos detalles de la recomendación:
 | Pestaña | Para qué |
 |---|---|
 | Prioridades y resumen | Qué es P1, P2 o basura en los correos, categorías y qué incluye el resumen del día. |
-| Marcas y stickers | Nombre, color y **alias** de cada marca (dominios del cliente, productos) para que el agente la reconozca en los correos; archivar marcas; nombre, color, orden y forma de contar de cada sticker. |
+| Marcas, etapas y agencias | Nombre, color y **alias** de cada marca (dominios del cliente, productos) para que el agente la reconozca en los correos; archivar marcas. Etapas: crear, renombrar, color, orden, cómo cuenta y borrar (moviendo sus iniciativas). Agencias: nombre, color y **dominios de correo**; al agregar un dominio se aplica también a lo que ya existe. |
 | Plantillas | Subtareas típicas de cada tipo de trabajo, palabras que activan cada plantilla y lo que aprendió de tus cambios. |
 | Habilidades | Catálogo de habilidades para perfiles y plantillas. |
 | Script de Gmail | Remitentes VIP y basura, y estado del script que lee el correo. |
@@ -222,20 +250,21 @@ Algunos detalles de la recomendación:
 |---|:-:|:-:|:-:|
 | Ver tablero, listas y actividad | ✓ | ✓ | ✓ |
 | Agregar pendientes | ✓ | ✓ | ✓ |
-| Crear stickers | ✓ | ✓ | ✓ |
 | Marcar sus propias subtareas | ✓ | ✓ | ✓ |
-| Cambiar sticker y observación | | ✓ | ✓ |
+| Cambiar etapa (también arrastrando) y observación | | ✓ | ✓ |
 | Crear y editar subtareas de la iniciativa | | ✓ | ✓ |
-| Crear iniciativas y marcas, planificar pendientes | | | ✓ |
+| Crear iniciativas, marcas, etapas y agencias; planificar pendientes | | | ✓ |
 | Cambiar marca, responsable, fechas y descripción | | | ✓ |
 | Ver correos y configurar el agente | | | ✓ |
 
 ## 11. Preguntas frecuentes
 
-- **No puedo cambiar el estatus de una iniciativa.** Solo el responsable y el gerente pueden hacerlo. Si te
+- **No puedo cambiar la etapa de una iniciativa.** Solo el responsable y el gerente pueden hacerlo. Si te
   toca a ti, pídele al gerente que te asigne como responsable.
 - **No aparezco como responsable.** El gerente tiene que marcarte "Puede ser responsable" en Equipo.
-- **El sticker que necesito no existe.** Créalo con **+ Sticker** en el tablero.
+- **La etapa que necesito no existe.** El gerente la crea con **+ Nueva etapa** al final del tablero.
+- **Un correo de una agencia no quedó con su agencia.** Revisa que su dominio esté en Configuración → Marcas,
+  etapas y agencias.
 - **La recomendación dice "Nadie del equipo tiene…".** Falta esa habilidad en los perfiles. Agrégala en Equipo
   o elige a la persona a mano.
 - **No veo un cambio que hizo un compañero.** Se actualiza solo en segundos. Si no, recarga la página.
