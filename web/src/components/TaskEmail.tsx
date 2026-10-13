@@ -144,6 +144,12 @@ export function TaskEmail({ task, members }: { task: Task; members: Member[] }) 
     return (
       <section className="mt-5 rounded-lg border border-dashed border-stone-300 p-3 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
         ✉ Al asignar un responsable, el script le reenvía el correo original con sus adjuntos y lo guarda aquí.
+        {task.assignee_id && (
+          <button className={`${btn} ml-2 px-2 py-0.5 text-[11px]`} onClick={retry}>
+            Reenviar ahora
+          </button>
+        )}
+        {error && <span className="ml-2 text-red-600 dark:text-red-400">{error}</span>}
       </section>
     )
   }
