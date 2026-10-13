@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useAuth } from '../lib/auth'
 import { BrandPicker, brandIdsOf } from './Brands'
 import { useNavigate } from 'react-router-dom'
 import { memberOption } from '../lib/data'
@@ -40,23 +41,26 @@ interface Props {
   existing: ExistingItem[]
   onClose: () => void
   onCreated: () => void
+  // Datos sugeridos (por ejemplo, por el análisis del agente) en lugar de los del correo.
+  prefill?: { title?: string; description?: string; brand_ids?: string[]; priority?: Priority; due_date?: string | null }
 }
 
 // Ventana de "Crear pendiente": todo precargado desde el correo, para asignar de una vez o dejarlo planificado.
-export function EmailTaskModal({ email: e, members, brands, stickers, existing, onClose, onCreated }: Props) {
+export function EmailTaskModal({ email: e, members, brands, stickers, existing, onClose, onCreated, prefill }: Props) {
   const navigate = useNavigate()
+  const { isAdmin } = useAuth()
   const [mode, setMode] = useState<'asignar' | 'planificar'>('asignar')
-  const [title, setTitle] = useState((e.summary?.split(/[;.]/)[0] || e.subject || '').trim().slice(0, 80))
+  const [title, setTitle] = useState(prefill?.title || (e.summary?.split(/[;.]/)[0] || e.subject || '').trim().slice(0, 80))
   const [description, setDescription] = useState(
-    [e.summary, `Correo de ${e.from_name || e.from_email}: ${e.subject ?? ''}`].filter(Boolean).join('\n'),
+    prefill?.description || [e.summary, `Correo de ${e.from_name || e.from_email}: ${e.subject ?? ''}`].filter(Boolean).join('\n'),
   )
-  const [brandIds, setBrandIds] = useState<string[]>(brandIdsOf(e))
+  const [brandIds, setBrandIds] = useState<string[]>(prefill?.brand_ids?.length ? prefill.brand_ids : brandIdsOf(e))
   const brand = brandIds[0] ?? ''
   // Varias marcas: una iniciativa multimarca, o separar una por marca.
   const [split, setSplit] = useState(false)
   const splitting = split && brandIds.length > 1
-  const [priority, setPriority] = useState<Priority>(e.priority === 'ninguna' ? 'P2' : e.priority)
-  const [due, setDue] = useState(e.reply_by ?? '')
+  const [priority, setPriority] = useState<Priority>(prefill?.priority ?? (e.priority === 'ninguna' ? 'P2' : e.priority))
+  const [due, setDue] = useState(prefill?.due_date ?? e.reply_by ?? '')
   const [templates, setTemplates] = useState<PlanTemplate[]>([])
   const [templateId, setTemplateId] = useState<string>('')
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -162,7 +166,9 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
     setDone(
       mode === 'asignar'
         ? { text: `Iniciativa creada y asignada a ${name ?? 'su responsable'}${subs.filter((s) => s.include).length ? ` con ${subs.filter((s) => s.include).length} subtareas` : ''}.`, to: '/tablero', label: 'Ver en el tablero' }
-        : { text: 'Pendiente creado con su recomendación lista para revisar.', to: `/listas?lista=${r.list_id}&plan=${r.list_item_id}`, label: 'Revisar el plan' },
+        : isAdmin
+          ? { text: 'Pendiente creado con su recomendación lista para revisar.', to: `/listas?lista=${r.list_id}&plan=${r.list_item_id}`, label: 'Revisar el plan' }
+          : { text: 'Pendiente enviado al gerente para que lo reparta.', to: `/listas?lista=${r.list_id}`, label: 'Ver en Listas' },
     )
   }
 
@@ -220,7 +226,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
               {(
                 [
                   ['asignar', 'Asignar ahora', 'Va al tablero con responsable y subtareas.'],
-                  ['planificar', 'Planificar después', 'Queda en Listas con la recomendación lista para revisar.'],
+                  ['planificar', isAdmin ? 'Planificar después' : 'Que lo planifique el gerente', isAdmin ? 'Queda en Listas con la recomendación lista para revisar.' : 'Queda en Listas para que el gerente lo reparta.'],
                 ] as const
               ).map(([value, label, desc]) => (
                 <button

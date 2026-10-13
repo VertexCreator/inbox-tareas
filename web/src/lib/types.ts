@@ -18,6 +18,7 @@ export interface Member {
   skill_levels: Record<string, number>
   open_subtasks: number
   can_own: boolean
+  ai_analysis_allowed: boolean
 }
 
 export interface Brand {
@@ -217,6 +218,8 @@ export interface Email {
   mentioned: boolean
   addressed: 'para' | 'copia' | 'lista' | null
   priority_locked: boolean
+  owner_member_id: string | null
+  body_preview: string | null
 }
 
 export interface Rule {
@@ -280,6 +283,7 @@ export interface Settings {
   email_search_days: number
   forward_on_assign: boolean
   dashboard_url: string | null
+  ai_analysis_daily_limit: number
 }
 
 export const STATUS_LABEL: Record<TaskStatus, string> = {
@@ -290,3 +294,24 @@ export const STATUS_LABEL: Record<TaskStatus, string> = {
 }
 
 export const PRIORITY_ORDER: Record<string, number> = { P1: 0, P2: 1, P3: 2, ninguna: 3 }
+
+// Resultado del análisis que el agente del gerente hace a pedido de un miembro.
+export interface AnalysisResult {
+  summary?: string
+  priority?: Priority | 'ninguna'
+  reason?: string
+  brands?: string[]
+  pendiente?: { title: string; notes?: string | null; due_date?: string | null; priority?: Priority; brands?: string[] } | null
+  reply?: string | null
+}
+
+export interface AnalysisRequest {
+  id: number
+  email_id: string
+  status: 'pendiente' | 'listo' | 'error' | 'cancelado'
+  wants_reply: boolean
+  result: AnalysisResult | null
+  detail: string | null
+  created_at: string
+  done_at: string | null
+}

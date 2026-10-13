@@ -4,15 +4,17 @@ import { relativeShort } from '../lib/data'
 import { forwardEta, mmss, useNow, type ForwardRow, type ForwardSchedule } from '../lib/forwards'
 import { supabase, uniqueChannel } from '../lib/supabase'
 
-function etaText(schedule: ForwardSchedule, now: number) {
-  const eta = forwardEta(schedule, now)
+function etaText(schedule: ForwardSchedule, now: number, sender?: string | null) {
+  const eta = forwardEta(schedule, now, sender)
   if (eta.kind === 'countdown') return { short: mmss(eta.seconds), long: `se envía en ${mmss(eta.seconds)}`, stalled: false }
   if (eta.kind === 'soon') return { short: 'ya', long: 'se envía en cualquier momento', stalled: false }
   return {
     short: 'script detenido',
     long: eta.lastCheck
-      ? `el script de Gmail no revisa desde ${relativeShort(eta.lastCheck)}: revisa Apps Script`
-      : 'el script de Gmail todavía no tiene la versión nueva: pégala en Apps Script y ejecuta instalar',
+      ? `el script de Gmail ${sender ? 'de quien asignó ' : ''}no revisa desde ${relativeShort(eta.lastCheck)}: revisa Apps Script`
+      : sender
+        ? 'quien asignó todavía no conectó su Gmail en Mi correo'
+        : 'el script de Gmail todavía no tiene la versión nueva: pégala en Apps Script y ejecuta instalar',
     stalled: true,
   }
 }
@@ -24,7 +26,7 @@ export function ForwardBadge({ forward, schedule, name }: { forward?: ForwardRow
   const who = name ?? 'la persona asignada'
 
   if (forward.status === 'pendiente') {
-    const t = etaText(schedule, now)
+    const t = etaText(schedule, now, forward.sender_member_id)
     return (
       <span
         className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${
@@ -62,9 +64,9 @@ export function ForwardBadge({ forward, schedule, name }: { forward?: ForwardRow
 }
 
 // Línea completa para el detalle de la iniciativa mientras el correo está en camino.
-export function ForwardCountdown({ schedule, name }: { schedule: ForwardSchedule; name?: string | null }) {
+export function ForwardCountdown({ schedule, name, sender }: { schedule: ForwardSchedule; name?: string | null; sender?: string | null }) {
   const now = useNow(true)
-  const t = etaText(schedule, now)
+  const t = etaText(schedule, now, sender)
   return (
     <span className="tabular-nums">
       Correo para {name ?? 'la persona asignada'}: {t.long}.

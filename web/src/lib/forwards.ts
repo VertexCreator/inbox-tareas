@@ -11,27 +11,31 @@ export interface ForwardRow {
   attempts: number
   created_at: string
   sent_at: string | null
+  // Dueño del correo: su script hace el reenvío (null = el script del gerente).
+  sender_member_id: string | null
 }
 
 export interface ForwardSchedule {
   lastCheck: string | null
   everyMinutes: number
+  // Última pasada del script de cada miembro que conectó su Gmail.
+  members: Record<string, string>
 }
 
 // El último reenvío de cada iniciativa y cuándo pasó el script por última vez. En tiempo real.
 export function useForwards() {
   const [rows, setRows] = useState<ForwardRow[]>([])
-  const [schedule, setSchedule] = useState<ForwardSchedule>({ lastCheck: null, everyMinutes: 5 })
+  const [schedule, setSchedule] = useState<ForwardSchedule>({ lastCheck: null, everyMinutes: 5, members: {} })
 
   const loadSchedule = useCallback(async () => {
     const { data } = await supabase.rpc('forward_schedule')
-    if (data) setSchedule({ lastCheck: data.last_check ?? null, everyMinutes: data.every_minutes ?? 5 })
+    if (data) setSchedule({ lastCheck: data.last_check ?? null, everyMinutes: data.every_minutes ?? 5, members: data.members ?? {} })
   }, [])
 
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('email_forwards')
-      .select('id, task_id, member_id, status, detail, attempts, created_at, sent_at')
+      .select('id, task_id, member_id, status, detail, attempts, created_at, sent_at, sender_member_id')
       .order('created_at', { ascending: false })
       .limit(500)
     setRows((data ?? []) as ForwardRow[])
@@ -84,10 +88,11 @@ export type Eta =
   | { kind: 'stalled'; lastCheck: string | null }
 
 // Cuánto falta para la próxima pasada del script. Si lleva más de 15 minutos sin pasar, está detenido.
-export function forwardEta(schedule: ForwardSchedule, now: number): Eta {
-  if (!schedule.lastCheck) return { kind: 'stalled', lastCheck: null }
-  const last = new Date(schedule.lastCheck).getTime()
-  if (now - last > 15 * 60_000) return { kind: 'stalled', lastCheck: schedule.lastCheck }
+export function forwardEta(schedule: ForwardSchedule, now: number, sender?: string | null): Eta {
+  const lastCheck = sender ? (schedule.members[sender] ?? null) : schedule.lastCheck
+  if (!lastCheck) return { kind: 'stalled', lastCheck: null }
+  const last = new Date(lastCheck).getTime()
+  if (now - last > 15 * 60_000) return { kind: 'stalled', lastCheck }
   const next = last + schedule.everyMinutes * 60_000
   const seconds = Math.round((next - now) / 1000)
   return seconds > 0 ? { kind: 'countdown', seconds } : { kind: 'soon' }

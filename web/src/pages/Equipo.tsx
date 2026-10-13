@@ -13,9 +13,10 @@ interface Draft {
   available: boolean
   is_admin: boolean
   can_own: boolean
+  ai_analysis_allowed: boolean
 }
 
-const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false, can_own: false }
+const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false, can_own: false, ai_analysis_allowed: false }
 
 function useSkills() {
   const [skills, setSkills] = useState<string[]>([])
@@ -38,6 +39,7 @@ function toRow(d: Draft) {
     available: d.available,
     is_admin: d.is_admin,
     can_own: d.can_own || d.is_admin,
+    ai_analysis_allowed: d.ai_analysis_allowed && !d.is_admin,
   }
 }
 
@@ -55,6 +57,15 @@ export function Equipo() {
   const [adding, setAdding] = useState(false)
   const [accessFor, setAccessFor] = useState<string | null>(null)
   const skills = useSkills()
+
+  const [mailboxes, setMailboxes] = useState<Record<string, string | null>>({})
+  useEffect(() => {
+    if (!isAdmin) return
+    supabase
+      .from('member_mailboxes')
+      .select('member_id, last_ingest_at')
+      .then(({ data }) => setMailboxes(Object.fromEntries((data ?? []).map((b) => [b.member_id as string, b.last_ingest_at as string | null]))))
+  }, [isAdmin, members])
 
   const active = members.filter((m) => m.active)
   const inactive = members.filter((m) => !m.active)
@@ -77,6 +88,7 @@ export function Equipo() {
       </div>
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
+      {isAdmin && <AnalysisLimit allowed={members.filter((m) => m.active && m.ai_analysis_allowed).length} />}
 
       {adding && (
         <MemberForm
@@ -125,6 +137,7 @@ export function Equipo() {
               <>
                 <MemberRow
                   m={m}
+                  mailbox={isAdmin && !m.is_admin ? (m.id in mailboxes ? (mailboxes[m.id] ? 'ok' : 'sin_envios') : 'no') : undefined}
                   doneCount={tasks.filter((t) => t.assignee_id === m.id && t.status === 'hecho').length}
                   onEdit={isAdmin ? () => setEditing(m.id) : undefined}
                   onAccess={isAdmin ? () => setAccessFor(accessFor === m.id ? null : m.id) : undefined}
@@ -164,9 +177,11 @@ function MemberRow({
   doneCount,
   onEdit,
   onAccess,
+  mailbox,
 }: {
   m: Member
   doneCount: number
+  mailbox?: 'ok' | 'sin_envios' | 'no'
   onEdit?: () => void
   onAccess?: () => void
 }) {
@@ -196,6 +211,12 @@ function MemberRow({
             <Tag>Sin habilidades cargadas</Tag>
           )}
           {!m.available && <Tag tone="warning">No disponible</Tag>}
+          {mailbox && (
+            <Tag tone={mailbox === 'ok' ? 'accent' : 'neutral'}>
+              {mailbox === 'ok' ? '✉ Gmail conectado' : mailbox === 'sin_envios' ? '✉ Gmail sin primer envío' : '✉ Gmail sin conectar'}
+            </Tag>
+          )}
+          {m.ai_analysis_allowed && <Tag tone="accent">✦ Análisis del agente</Tag>}
           <span className="text-xs text-stone-500 dark:text-stone-400">
             {m.open_tasks} tareas{m.open_subtasks ? ` + ${m.open_subtasks} subtareas` : ''} · {m.open_points}/{m.capacity_points} pts · {doneCount} hechas
           </span>
@@ -315,6 +336,12 @@ function MemberForm({
           <input type="checkbox" checked={d.can_own || d.is_admin} disabled={d.is_admin} onChange={(e) => set({ can_own: e.target.checked })} />
           Puede ser responsable de iniciativas
         </label>
+        {!d.is_admin && (
+          <label className="flex items-center gap-2" title="El agente del gerente analiza los correos que esta persona le pida, con el plan de Claude del gerente">
+            <input type="checkbox" checked={d.ai_analysis_allowed} onChange={(e) => set({ ai_analysis_allowed: e.target.checked })} />
+            Puede pedir análisis al agente (usa tu plan de Claude)
+          </label>
+        )}
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={d.is_admin} onChange={(e) => set({ is_admin: e.target.checked })} />
           Administrador (ve correos y corrige repartos)
@@ -425,5 +452,48 @@ function AccessForm({ m, onClose }: { m: Member; onClose: () => void }) {
         </>
       )}
     </div>
+  )
+}
+
+// Cuántos análisis del agente puede pedir cada persona habilitada por día (consumen el plan de Claude del gerente).
+function AnalysisLimit({ allowed }: { allowed: number }) {
+  const [limit, setLimit] = useState<number | null>(null)
+  const [saved, setSaved] = useState<number | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('ai_analysis_daily_limit')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setLimit(data?.ai_analysis_daily_limit ?? 10)
+        setSaved(data?.ai_analysis_daily_limit ?? 10)
+      })
+  }, [])
+  if (limit === null) return null
+  const save = async () => {
+    if (!(limit >= 1 && limit <= 100)) return setMsg('Usa un número entre 1 y 100.')
+    const { error } = await supabase.from('settings').update({ ai_analysis_daily_limit: limit }).eq('id', 1)
+    setMsg(error ? error.message : 'Guardado.')
+    if (!error) setSaved(limit)
+  }
+  return (
+    <Card className="flex flex-wrap items-center gap-3 p-3 text-sm">
+      <span className="text-violet-600 dark:text-violet-300">✦</span>
+      <span className="min-w-0 flex-1">
+        <b>Análisis del agente para el equipo:</b> {allowed === 0 ? 'nadie habilitado todavía (actívalo en Editar de cada persona).' : `${allowed} ${allowed === 1 ? 'persona habilitada' : 'personas habilitadas'}.`}{' '}
+        <span className="text-stone-500 dark:text-stone-400">Usa tu plan de Claude; lo procesa el Planificador cada 30 minutos en horario laboral.</span>
+      </span>
+      <label className="flex items-center gap-1.5 text-xs">
+        Hasta
+        <input type="number" min={1} max={100} className={`${input} w-16 py-1`} value={limit} onChange={(e) => setLimit(Number(e.target.value))} />
+        por persona al día
+      </label>
+      <button className={btn} disabled={limit === saved} onClick={save}>
+        Guardar
+      </button>
+      {msg && <span className="text-xs text-stone-500">{msg}</span>}
+    </Card>
   )
 }

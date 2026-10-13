@@ -157,6 +157,45 @@ iniciativas de otras personas (cada fila dice cuál es cuál).
 - Si trabajas con varias marcas, filtra con los botones de marca.
 - El gerente puede elegir a cualquier persona del equipo en el menú de arriba para ver sus tareas.
 
+### Mi correo (equipo)
+
+Cada persona del equipo puede conectar **su propio Gmail** en la pestaña **Mi correo**. Solo esa persona ve su
+correo; el gerente no.
+
+**Conectarlo (una vez, unos 3 minutos):**
+
+1. En **Mi correo**, pulsa **Copiar el script**. Ya trae tu clave personal: no la compartas.
+2. Abre **script.google.com → Proyecto nuevo** con tu correo de Dimassi, borra lo que trae, pega y guarda.
+3. Elige la función **instalar** y pulsa **Ejecutar**. Acepta los permisos (Revisar permisos → tu cuenta → si
+   dice "Google no verificó esta app", Configuración avanzada → Ir a… → Permitir). Si no aparece "Revisados …"
+   en el registro, pulsa **Ejecutar** otra vez.
+4. La página se actualiza sola con el primer envío: **✓ Gmail conectado**.
+
+**Cómo se ordena (sin IA):** el script revisa tu correo cada 10 minutos.
+
+- **P1:** te escriben a ti, te piden algo y hay plazo de hoy o mañana.
+- **P2:** te piden algo, te mencionan o el remitente es VIP.
+- **P3:** te escriben a ti o nombran una marca.
+- **Sin prioridad:** lo informativo, en copia o automático. Lo encuentras en **Sin prioridad**, al final de la página.
+- La basura (Promociones, Social, Foros) se separa sola.
+
+Si mueves un correo a otra prioridad, la base **aprende ese remitente** y los próximos llegan así.
+
+**Qué puedes hacer con cada correo:** **Abrir ↗** en tu Gmail, **Crear pendiente** y **✓ Listo**. Con
+**Crear pendiente** puedes **crear la iniciativa y asignarla** a cualquier persona autorizada, o dejarla para
+que el gerente la reparta. Si la asignas a otra persona, **tu script le reenvía el correo** ("Asignación
+TeamFlow - …", con todo el texto y los adjuntos), igual que cuando asigna el gerente.
+
+**✦ Pedir análisis al agente** (solo si el gerente te lo habilitó): el agente del gerente analiza ese correo en
+su próxima pasada (cada 30 minutos, lunes a viernes de 8:00 a 18:30). Te devuelve:
+
+- un resumen, la prioridad sugerida (**Aplicar**) y las marcas;
+- un pendiente propuesto (**Crear pendiente con esto**);
+- con **+ respuesta**, un texto de respuesta para copiar en Gmail.
+
+Ese correo pasa por la sesión de Claude del gerente; el resto de tu bandeja nunca llega a Claude. Hay un límite
+diario por persona.
+
 ## 6. Listas y planificación
 
 **Todos** pueden anotar pendientes:
@@ -268,6 +307,9 @@ Algunos detalles de la recomendación:
   - **Capacidad:** 10 = tiempo completo; 5 = medio tiempo.
   - **Puede ser responsable de iniciativas:** solo quienes lo tienen marcado aparecen como responsables.
   - **Disponible:** desmárcalo durante vacaciones para que el agente no le recomiende trabajo.
+  - **Puede pedir análisis al agente:** habilita **✦ Pedir análisis** en su Mi correo. Usa tu plan de Claude; el límite
+    diario por persona se ajusta en el recuadro **Análisis del agente para el equipo**, arriba de la lista.
+- Cada persona muestra si conectó su Gmail (**✉ Gmail conectado**).
 
 ## 9. Configuración (solo gerente)
 
@@ -289,9 +331,11 @@ Algunos detalles de la recomendación:
 | Marcar sus propias subtareas | ✓ | ✓ | ✓ |
 | Cambiar etapa (también arrastrando) y observación | | ✓ | ✓ |
 | Crear y editar subtareas de la iniciativa | | ✓ | ✓ |
+| Ver su propio correo y crear y asignar iniciativas desde él (Mi correo) | ✓ | ✓ | ✓ |
+| Pedir análisis al agente | si el gerente lo habilita | si el gerente lo habilita | |
 | Crear iniciativas, marcas, etapas y agencias; planificar pendientes | | | ✓ |
 | Cambiar marca, responsable, fechas y descripción | | | ✓ |
-| Ver correos y configurar el agente | | | ✓ |
+| Ver la bandeja del gerente y configurar el agente | | | ✓ |
 
 ## 11. Preguntas frecuentes
 

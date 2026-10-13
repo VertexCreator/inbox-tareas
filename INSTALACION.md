@@ -120,7 +120,8 @@ Las tareas programadas se guardan en cada computadora, por eso se crean aquí. S
 | Resumen del fin de semana | `0 21 * * 0` → domingos, 21:00 | `agent/resumen-fin-de-semana.md` |
 | Planificador | `*/30 8-18 * * 1-5` → cada 30 min, lunes a viernes de 8:00 a 18:30 | `agent/planificador.md` |
 
-El Planificador afina las recomendaciones de reparto que pides con **Planificar** en Listas. Si no hay
+El Planificador afina las recomendaciones de reparto que pides con **Planificar** en Listas. También atiende los análisis de correos que
+pide el equipo desde **Mi correo** (solo personas que habilites en Equipo). Si no hay
 nada que afinar termina en una consulta, así que casi no consume.
 
 Los horarios son en la hora de esa computadora.
@@ -170,3 +171,14 @@ Cada `git push` a `main` vuelve a publicar el dashboard en Vercel.
 | Conectores Gmail y Supabase | ✅ cuenta de Claude | Reconectar si lo pide |
 | Tareas programadas (análisis, fin de semana, planificador) | | ✅ Crearlas (paso 5) |
 | `web/.env.local` | | Solo si se desarrolla ahí |
+
+---
+
+## Correo del equipo (cada persona, desde su computadora)
+
+Cada miembro conecta su propio Gmail desde el dashboard: **Mi correo → Copiar el script**, lo pega en un proyecto
+nuevo de script.google.com con su cuenta y ejecuta `instalar`. No necesita Claude ni configurar nada más.
+
+- Si la cuenta de Dimassi no deja crear proyectos o ejecutar scripts, TI debe permitir Apps Script para el dominio.
+- El script de los miembros se genera a partir de `apps-script/Code.gs`. Si cambias ese archivo, corre
+  `python3 scripts/construir_mi_correo.py` antes de publicar; las personas copian la versión nueva desde Mi correo.

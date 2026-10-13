@@ -40,7 +40,6 @@ const CATEGORIAS_BASURA = {
 
 const REMITENTE_AUTOMATICO = /(no-?reply|do-?not-?reply|notificaciones?|notifications?|alertas?|alerts?|mailer-daemon|postmaster)/i;
 
-/** Crea el disparador cada 15 minutos y hace una primera revisión. */
 const FUNCIONES_PROGRAMADAS = ['revisarCorreos', 'buscarCorreosParaTareas', 'reenviarAsignaciones'];
 const ASUNTO_ASIGNACION = 'Asignación TeamFlow - ';
 const MAX_ADJUNTOS_BYTES = 24 * 1024 * 1024; // Gmail acepta hasta 25 MB por correo

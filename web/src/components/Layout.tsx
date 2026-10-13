@@ -24,6 +24,7 @@ export function Layout() {
     { to: '/listas', label: 'Listas' },
     { to: '/tablero', label: 'Tablero' },
     { to: '/mis-tareas', label: 'Mis tareas' },
+    ...(isAdmin ? [] : [{ to: '/mi-correo', label: 'Mi correo' }]),
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
   ]

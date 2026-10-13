@@ -8,6 +8,7 @@ import { Equipo } from './pages/Equipo'
 import { Configuracion } from './pages/Configuracion'
 import { Listas } from './pages/Listas'
 import { MisTareas } from './pages/MisTareas'
+import { MiCorreo } from './pages/MiCorreo'
 import { Ayuda } from './pages/Ayuda'
 
 // La pestaña se llamaba Tickets: los enlaces viejos (por ejemplo, en correos ya enviados) siguen funcionando.
@@ -33,6 +34,7 @@ function Gate() {
         <Route path="listas" element={<Listas />} />
         <Route path="tablero" element={<Tablero />} />
         <Route path="mis-tareas" element={<MisTareas />} />
+        <Route path="mi-correo" element={<MiCorreo />} />
         <Route path="tickets" element={<ToMisTareas />} />
         <Route path="ayuda" element={<Ayuda />} />
         <Route path="equipo" element={<Equipo />} />

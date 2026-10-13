@@ -702,6 +702,7 @@ function HoyMiembro() {
           {entries.length} pendientes tuyos{me ? ` · carga ${Math.round(me.load_ratio * 100)}%` : ''}
         </p>
       </div>
+      <MyMailboxCard />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
           {entries.length === 0 && (
@@ -770,5 +771,43 @@ function MySubtask({ subtask: s, parent, members, onChanged, onOpen, onOpenEmail
       </div>
       {error && <div className="mt-1 text-[13px] text-red-600 dark:text-red-400">{error}</div>}
     </div>
+  )
+}
+
+// Aviso en el Hoy del equipo: su correo pendiente, o la invitación a conectar su Gmail.
+function MyMailboxCard() {
+  const { member } = useAuth()
+  const [state, setState] = useState<{ connected: boolean; p1: number; total: number } | null>(null)
+  useEffect(() => {
+    if (!member) return
+    Promise.all([
+      supabase.from('member_mailboxes').select('last_ingest_at').eq('member_id', member.id).maybeSingle(),
+      supabase.from('emails').select('priority').eq('owner_member_id', member.id).eq('status', 'pendiente').neq('priority', 'ninguna'),
+    ]).then(([b, e]) => {
+      const rows = (e.data ?? []) as { priority: string }[]
+      setState({ connected: !!b.data?.last_ingest_at, p1: rows.filter((r) => r.priority === 'P1').length, total: rows.length })
+    })
+  }, [member])
+  if (!state) return null
+  return (
+    <Link
+      to="/mi-correo"
+      className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm hover:border-stone-400 dark:border-stone-800 dark:bg-stone-900"
+    >
+      <span className="text-lg" aria-hidden="true">
+        ✉
+      </span>
+      {state.connected ? (
+        <span className="flex-1">
+          <b>Mi correo:</b> {state.total} por atender
+          {state.p1 > 0 && <span className="font-medium text-red-600 dark:text-red-400"> · {state.p1} P1</span>}
+        </span>
+      ) : (
+        <span className="flex-1">
+          <b>Conecta tu Gmail</b> para ver tu correo ordenado por prioridad y crear tareas desde él (3 minutos).
+        </span>
+      )}
+      <span className="text-indigo-600 dark:text-indigo-400">{state.connected ? 'Ver →' : 'Conectar →'}</span>
+    </Link>
   )
 }

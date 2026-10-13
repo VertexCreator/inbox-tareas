@@ -27,6 +27,7 @@ interface Forward {
   attempts: number
   created_at: string
   sent_at: string | null
+  sender_member_id: string | null
 }
 
 function size(n: number) {
@@ -116,7 +117,7 @@ export function TaskEmail({ task, members, schedule, variant = 'section' }: { ta
   const load = useCallback(async () => {
     const [c, f] = await Promise.all([
       supabase.from('task_email_content').select('*').eq('task_id', task.id).maybeSingle(),
-      supabase.from('email_forwards').select('id, member_id, status, detail, attempts, created_at, sent_at').eq('task_id', task.id).order('created_at', { ascending: false }),
+      supabase.from('email_forwards').select('id, member_id, status, detail, attempts, created_at, sent_at, sender_member_id').eq('task_id', task.id).order('created_at', { ascending: false }),
     ])
     setContent((c.data as Content | null) ?? null)
     setForwards((f.data ?? []) as Forward[])
@@ -202,7 +203,7 @@ export function TaskEmail({ task, members, schedule, variant = 'section' }: { ta
                     : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'
               }`}
             >
-              {last.status === 'pendiente' && schedule ? <ForwardCountdown schedule={schedule} name={memberName(members, last.member_id)} /> : FORWARD_TEXT[last.status]}
+              {last.status === 'pendiente' && schedule ? <ForwardCountdown schedule={schedule} name={memberName(members, last.member_id)} sender={last.sender_member_id} /> : FORWARD_TEXT[last.status]}
               {last.status === 'enviado' && ` a ${memberName(members, last.member_id) ?? 'la persona asignada'}${last.sent_at ? ` el ${relativeShort(last.sent_at)}` : ''}, con todos sus adjuntos.`}
               {last.status !== 'enviado' && last.status !== 'pendiente' && last.detail ? `: ${last.detail}.` : ''}
               {last.status === 'enviado' && last.detail ? ` ${last.detail}.` : ''}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { gmailThreadUrl, shortDate, todayISO } from '../lib/data'
 import type { AgentRun, Brand, Email, SummaryData } from '../lib/types'
@@ -38,12 +38,15 @@ interface Props {
   onDone: (id: string) => void
   onPending: (e: Email) => void
   onMove: (e: Email, to: Level) => void
-  onSeeInbox: () => void
+  onSeeInbox?: () => void
+  title?: string
+  // Acciones extra en cada tarjeta (por ejemplo, pedir análisis al agente en Mi correo).
+  renderExtra?: (e: Email) => ReactNode
 }
 
 // Tres cuadros por prioridad armados con los correos clasificados (no con el texto del agente):
 // siempre al día, y si el agente falla o escribe en formato viejo, se ven igual.
-export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account, created, onDone, onPending, onMove, onSeeInbox }: Props) {
+export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account, created, onDone, onPending, onMove, onSeeInbox, title = '✦ Resumen de tus correos', renderExtra }: Props) {
   const [dragging, setDragging] = useState<string | null>(null)
   const [over, setOver] = useState<Level | null>(null)
   const [brand, setBrand] = useState('')
@@ -63,7 +66,7 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
   return (
     <Card className="p-4">
       <div className="mb-2 flex flex-wrap items-center gap-x-2 text-xs text-stone-500 dark:text-stone-400">
-        <span className="font-medium text-indigo-600 dark:text-indigo-400">✦ Resumen de tus correos</span>
+        <span className="font-medium text-indigo-600 dark:text-indigo-400">{title}</span>
         {run && (
           <span>
             · análisis {relativeDate(run.ran_at)}
@@ -179,6 +182,7 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
                       created={created.includes(e.id)}
                       onDone={() => onDone(e.id)}
                       onPending={() => onPending(e)}
+                      extra={renderExtra?.(e)}
                       onMove={(to) => onMove(e, to)}
                       onDragStart={() => setDragging(e.id)}
                       onDragEnd={() => {
@@ -204,11 +208,13 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
       </div>
 
       <Extras d={d} />
-      <div className="mt-2 text-right">
-        <button className="text-xs text-stone-500 hover:underline dark:text-stone-400" onClick={onSeeInbox}>
-          Ver la bandeja completa ↓
-        </button>
-      </div>
+      {onSeeInbox && (
+        <div className="mt-2 text-right">
+          <button className="text-xs text-stone-500 hover:underline dark:text-stone-400" onClick={onSeeInbox}>
+            Ver la bandeja completa ↓
+          </button>
+        </div>
+      )}
     </Card>
   )
 }
@@ -225,6 +231,7 @@ function EmailCard({
   onDragStart,
   onDragEnd,
   isDragging,
+  extra,
 }: {
   email: Email
   bar: string
@@ -237,6 +244,7 @@ function EmailCard({
   onDragStart: () => void
   onDragEnd: () => void
   isDragging: boolean
+  extra?: ReactNode
 }) {
   const due = dueLabel(e.reply_by)
   const who = e.from_name || e.from_email || ''
@@ -306,6 +314,7 @@ function EmailCard({
         >
           {created ? '✓ Con pendiente' : 'Crear pendiente'}
         </button>
+        {extra}
         <button className="ml-auto rounded px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950" onClick={onDone}>
           ✓ Listo
         </button>
