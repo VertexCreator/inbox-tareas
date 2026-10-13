@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { hasBrand } from '../components/Brands'
 import { memberName, useBoard } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Brand, LogEntry, PlanTemplate, PrioritiesConfig, Rule, Settings, Sticker, StickerCategory, TemplateItem } from '../lib/types'
@@ -573,7 +574,7 @@ function BrandsStickers() {
                 aria-label="Nombre de la marca"
               />
               <ColorPicker value={b.color} onChange={(c) => updateBrand(b, { color: c })} />
-              <span className="text-xs text-stone-500">{tasks.filter((t) => t.brand_id === b.id).length} iniciativas</span>
+              <span className="text-xs text-stone-500">{tasks.filter((t) => hasBrand(t, b.id)).length} iniciativas</span>
               <button className={`${btn} ml-auto`} onClick={() => updateBrand(b, { archived: !b.archived })}>
                 {b.archived ? 'Reactivar' : 'Archivar'}
               </button>

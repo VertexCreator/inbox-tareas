@@ -7,8 +7,10 @@ import { chipClass, dotClass } from '../components/colors'
 import { ColorPicker } from '../components/ColorPicker'
 import { InitiativeCard, InitiativeDetail, type BoardCtx } from '../components/Initiative'
 import { Card, btn, btnPrimary, input } from '../components/ui'
+import { BrandPicker, hasBrand, isMultibrand } from '../components/Brands'
 
 const ALL = 'todas'
+const MULTI = 'multi'
 
 export function Tablero() {
   const { isAdmin } = useAuth()
@@ -27,7 +29,9 @@ export function Tablero() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase()
     return tasks.filter((t) => {
-      if (brandTab !== ALL && (brandTab === 'sin' ? t.brand_id : t.brand_id !== brandTab)) return false
+      if (brandTab === 'sin' && t.brand_id) return false
+      if (brandTab === MULTI && !isMultibrand(t)) return false
+      if (brandTab !== ALL && brandTab !== 'sin' && brandTab !== MULTI && !hasBrand(t, brandTab)) return false
       if (person && (t.assignee_id ?? t.suggested_assignee_id) !== person && !subtasks.some((s) => s.task_id === t.id && s.assignee_id === person)) return false
       if (q && !`${t.title} ${t.description ?? ''} ${t.observation ?? ''}`.toLowerCase().includes(q)) return false
       return true
@@ -37,6 +41,7 @@ export function Tablero() {
   const columns = stickers.filter((s) => !hideEmpty || visible.some((t) => t.sticker_id === s.id))
   const open = tasks.find((t) => t.id === openId)
   const noBrand = tasks.filter((t) => !t.brand_id).length
+  const multi = tasks.filter(isMultibrand).length
 
   return (
     <div className="space-y-4">
@@ -86,9 +91,10 @@ export function Tablero() {
             onClick={() => setBrandTab(b.id)}
             label={b.name}
             color={b.color}
-            count={tasks.filter((t) => t.brand_id === b.id).length}
+            count={tasks.filter((t) => hasBrand(t, b.id)).length}
           />
         ))}
+        {multi > 0 && <BrandTab active={brandTab === MULTI} onClick={() => setBrandTab(MULTI)} label="Multimarca" count={multi} />}
         {noBrand > 0 && <BrandTab active={brandTab === 'sin'} onClick={() => setBrandTab('sin')} label="Sin marca" count={noBrand} />}
         {isAdmin && <NewBrand onCreated={(id) => setBrandTab(id)} />}
       </div>
@@ -97,7 +103,7 @@ export function Tablero() {
       {creating && isAdmin && (
         <NewInitiative
           ctx={ctx}
-          defaultBrand={brandTab !== ALL && brandTab !== 'sin' ? brandTab : ''}
+          defaultBrand={brandTab !== ALL && brandTab !== 'sin' && brandTab !== MULTI ? brandTab : ''}
           onCreated={() => {
             setCreating(false)
             reload()
@@ -108,7 +114,7 @@ export function Tablero() {
       {brandTab === ALL ? (
         <BrandOverview brands={liveBrands} tasks={tasks} ctx={ctx} onPick={setBrandTab} />
       ) : (
-        <BrandSummary tasks={visible} ctx={ctx} brand={brands.find((b) => b.id === brandTab)} />
+        <BrandSummary tasks={visible} ctx={ctx} brand={brands.find((b) => b.id === brandTab)} label={brandTab === MULTI ? 'Multimarca' : undefined} />
       )}
 
       <div className="-mx-4 overflow-x-auto px-4 pb-2">
@@ -122,7 +128,7 @@ export function Tablero() {
                   <span className="text-xs text-stone-500">{items.length}</span>
                 </div>
                 {items.map((t) => (
-                  <InitiativeCard key={t.id} task={t} ctx={ctx} onOpen={() => setOpenId(t.id)} showBrand={brandTab === ALL || brandTab === 'sin'} />
+                  <InitiativeCard key={t.id} task={t} ctx={ctx} onOpen={() => setOpenId(t.id)} showBrand={brandTab === ALL || brandTab === 'sin' || isMultibrand(t)} />
                 ))}
               </section>
             )
@@ -166,7 +172,8 @@ function BrandOverview({ brands, tasks, ctx, onPick }: { brands: Brand[]; tasks:
   return (
     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       {brands.map((b) => {
-        const mine = tasks.filter((t) => t.brand_id === b.id)
+        const mine = tasks.filter((t) => hasBrand(t, b.id))
+        const shared = mine.filter(isMultibrand).length
         const p = progress(mine, ctx.stickers)
         const late = mine.filter((t) => isOverdue(t.due_date, ['terminado', 'cancelado'].includes(catOf(t, ctx) ?? ''))).length
         const blocked = mine.filter((t) => t.observation && !['terminado', 'cancelado'].includes(catOf(t, ctx) ?? '')).length
@@ -188,6 +195,7 @@ function BrandOverview({ brands, tasks, ctx, onPick }: { brands: Brand[]; tasks:
               </span>
               {late > 0 && <span className="text-red-600 dark:text-red-400">{late} vencidas</span>}
               {blocked > 0 && <span className="text-amber-700 dark:text-amber-300">{blocked} con observación</span>}
+              {shared > 0 && <span>{shared} multimarca</span>}
             </div>
           </button>
         )
@@ -197,7 +205,7 @@ function BrandOverview({ brands, tasks, ctx, onPick }: { brands: Brand[]; tasks:
 }
 
 // Vista de una marca: avance, conteo por sticker y subtareas.
-function BrandSummary({ tasks, ctx, brand }: { tasks: Task[]; ctx: BoardCtx; brand?: Brand }) {
+function BrandSummary({ tasks, ctx, brand, label }: { tasks: Task[]; ctx: BoardCtx; brand?: Brand; label?: string }) {
   const p = progress(tasks, ctx.stickers)
   const subs = ctx.subtasks.filter((s) => tasks.some((t) => t.id === s.task_id))
   const subsDone = subs.filter((s) => s.done).length
@@ -205,7 +213,7 @@ function BrandSummary({ tasks, ctx, brand }: { tasks: Task[]; ctx: BoardCtx; bra
     <Card className="flex flex-wrap items-center gap-x-6 gap-y-2 p-3">
       <div className="min-w-48 flex-1">
         <div className="mb-1 flex justify-between text-xs">
-          <span className="font-medium">{brand ? brand.name : 'Sin marca'} · avance</span>
+          <span className="font-medium">{label ?? (brand ? brand.name : 'Sin marca')} · avance</span>
           <span className="tabular-nums text-stone-500">
             {p.done}/{p.total} iniciativas · {subsDone}/{subs.length} subtareas
           </span>
@@ -333,7 +341,7 @@ function NewSticker({ nextPosition, onDone }: { nextPosition: number; onDone: ()
 }
 
 function NewInitiative({ ctx, defaultBrand, onCreated }: { ctx: BoardCtx; defaultBrand: string; onCreated: () => void }) {
-  const [brand, setBrand] = useState(defaultBrand)
+  const [brandIds, setBrandIds] = useState<string[]>(defaultBrand ? [defaultBrand] : [])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [owner, setOwner] = useState('')
@@ -350,7 +358,7 @@ function NewInitiative({ ctx, defaultBrand, onCreated }: { ctx: BoardCtx; defaul
     const { error } = await supabase.from('tasks').insert({
       title: title.trim(),
       description: description.trim() || null,
-      brand_id: brand || null,
+      brand_ids: brandIds,
       assignee_id: owner || null,
       due_date: due || null,
       sticker_id: sticker || null,
@@ -363,20 +371,11 @@ function NewInitiative({ ctx, defaultBrand, onCreated }: { ctx: BoardCtx; defaul
   return (
     <Card className="p-4">
       <form onSubmit={submit} className="space-y-3" noValidate>
-        <div className="grid gap-2 md:grid-cols-[180px_minmax(0,1fr)]">
-          <select className={input} value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Marca">
-            <option value="">Sin marca</option>
-            {ctx.brands
-              .filter((b) => !b.archived)
-              .map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-          </select>
+        <BrandPicker value={brandIds} onChange={setBrandIds} brands={ctx.brands} />
+        <div>
           <input
             id="new-initiative-title"
-            className={input}
+            className={`${input} w-full`}
             placeholder="Iniciativa, ej. Video de producto para TikTok"
             value={title}
             onChange={(e) => {

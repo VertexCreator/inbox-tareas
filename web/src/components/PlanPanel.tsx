@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { BrandPicker, brandIdsOf } from './Brands'
 import { memberName, memberOption, shortDate } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import type { Brand, ListItem, Member, PlanRecommendation, PlanTemplate, Priority, Proposal, ProposalSubtask } from '../lib/types'
@@ -117,6 +118,7 @@ export function PlanPanel({ item, brands, members, templates, skills, onClose, o
 
   const template = templates.find((t) => t.id === rec.template_id)
   const included = draft.subtasks.filter((s) => s.include).length
+  const brandIds = draft.brand_ids ?? (draft.brand_id && draft.brand_id !== item.brand_id ? [draft.brand_id] : brandIdsOf(item))
 
   return (
     <div className="space-y-3 border-t border-indigo-200 bg-indigo-50/40 px-4 py-4 dark:border-indigo-900 dark:bg-indigo-950/20">
@@ -182,24 +184,21 @@ export function PlanPanel({ item, brands, members, templates, skills, onClose, o
       </div>
 
       <div className="flex flex-wrap items-end gap-3 rounded-lg bg-white p-3 dark:bg-stone-900">
-        <label className="space-y-1 text-xs">
-          <span className="block text-stone-500 dark:text-stone-400">Marca</span>
-          <select className={input} value={draft.brand_id ?? item.brand_id ?? ''} onChange={(e) => set({ brand_id: e.target.value || null })}>
-            <option value="">Sin marca</option>
-            {brands
-              .filter((b) => !b.archived)
-              .map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-          </select>
-          {!draft.brand_id && !item.brand_id && item.suggested_brand && (
+        <div className="max-w-md space-y-1 text-xs">
+          <span className="block text-stone-500 dark:text-stone-400">Marcas · la primera es la principal</span>
+          <BrandPicker value={brandIds} onChange={(ids) => set({ brand_ids: ids, brand_id: ids[0] ?? null })} brands={brands} />
+          {item.suggested_brand && (
             <span className="block pt-1">
-              <SuggestedBrand itemId={item.id} name={item.suggested_brand} brands={brands} isAdmin onAccepted={(id) => id && set({ brand_id: id })} />
+              <SuggestedBrand
+                itemId={item.id}
+                name={item.suggested_brand}
+                brands={brands}
+                isAdmin
+                onAccepted={(id) => id && set({ brand_ids: [...brandIds.filter((x) => x !== id), id], brand_id: brandIds[0] ?? id })}
+              />
             </span>
           )}
-        </label>
+        </div>
         <label className="space-y-1 text-xs">
           <span className="block text-stone-500 dark:text-stone-400">Habilidad principal</span>
           <select className={input} value={draft.main_skill ?? ''} onChange={(e) => set({ main_skill: e.target.value || null })}>

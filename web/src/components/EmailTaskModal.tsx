@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { BrandPicker, brandIdsOf } from './Brands'
 import { useNavigate } from 'react-router-dom'
 import { memberOption } from '../lib/data'
 import { supabase } from '../lib/supabase'
@@ -49,7 +50,11 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
   const [description, setDescription] = useState(
     [e.summary, `Correo de ${e.from_name || e.from_email}: ${e.subject ?? ''}`].filter(Boolean).join('\n'),
   )
-  const [brand, setBrand] = useState(e.brand_id ?? '')
+  const [brandIds, setBrandIds] = useState<string[]>(brandIdsOf(e))
+  const brand = brandIds[0] ?? ''
+  // Varias marcas: una iniciativa multimarca, o separar una por marca.
+  const [split, setSplit] = useState(false)
+  const splitting = split && brandIds.length > 1
   const [priority, setPriority] = useState<Priority>(e.priority === 'ninguna' ? 'P2' : e.priority)
   const [due, setDue] = useState(e.reply_by ?? '')
   const [templates, setTemplates] = useState<PlanTemplate[]>([])
@@ -113,13 +118,18 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
     if (subs.some((s) => s.include && !s.title.trim())) return setError('Hay una subtarea marcada sin título.')
     setBusy(true)
     setError(null)
-    const { data, error } = await supabase.rpc('create_from_email', {
+    const groups = splitting ? brandIds.map((id) => [id]) : [brandIds]
+    let data: unknown = null
+    for (let k = 0; k < groups.length; k++) {
+      const name = brands.find((b) => b.id === groups[k][0])?.name ?? ''
+      const t = splitting && !title.toLowerCase().includes(name.toLowerCase()) ? `${title.trim()} · ${name}` : title
+      const res = await supabase.rpc('create_from_email', {
       p: {
         email_id: e.id,
         mode,
-        title,
+        title: t,
         description,
-        brand_id: brand || null,
+        brand_ids: groups[k],
         priority,
         due_date: due || null,
         assignee_id: owner || null,
@@ -128,14 +138,27 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
         main_skill: preview?.main_skill ?? null,
         effort_points: preview?.effort_points ?? 2,
         subtasks: subs,
-        mark_done: markDone,
+        mark_done: markDone && k === groups.length - 1,
       },
     })
+      if (res.error) {
+        setBusy(false)
+        onCreated()
+        return setError(k > 0 ? `Se crearon ${k} de ${groups.length}. ${res.error.message}` : res.error.message)
+      }
+      data = res.data
+    }
     setBusy(false)
-    if (error) return setError(error.message)
     const r = data as { mode: string; list_item_id: string; list_id: string }
     onCreated()
     const name = members.find((m) => m.id === owner)?.name
+    if (splitting) {
+      return setDone(
+        mode === 'asignar'
+          ? { text: `Se crearon ${groups.length} iniciativas, una por marca, asignadas a ${name ?? 'su responsable'}. Puedes cambiar el responsable de cada una en el tablero.`, to: '/tablero', label: 'Ver en el tablero' }
+          : { text: `Se crearon ${groups.length} pendientes, uno por marca, con su recomendación.`, to: `/listas?lista=${r.list_id}`, label: 'Revisar en Listas' },
+      )
+    }
     setDone(
       mode === 'asignar'
         ? { text: `Iniciativa creada y asignada a ${name ?? 'su responsable'}${subs.filter((s) => s.include).length ? ` con ${subs.filter((s) => s.include).length} subtareas` : ''}.`, to: '/tablero', label: 'Ver en el tablero' }
@@ -235,17 +258,38 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
               />
             </div>
 
+            <div className="space-y-1.5">
+              <BrandPicker value={brandIds} onChange={setBrandIds} brands={brands} />
+              {e.suggested_brand && (
+                <div className="text-xs text-violet-700 dark:text-violet-300">✦ El correo también sugiere la marca "{e.suggested_brand}" (créala en Listas o en el Tablero).</div>
+              )}
+              {brandIds.length > 1 && (
+                <div className="flex flex-wrap gap-1.5 text-xs" role="radiogroup" aria-label="Varias marcas">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={!split}
+                    onClick={() => setSplit(false)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-left ${!split ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950' : 'border-stone-200 dark:border-stone-700'}`}
+                  >
+                    <span className="font-medium">Una iniciativa multimarca</span>
+                    <span className="block text-stone-500 dark:text-stone-400">El mismo trabajo involucra a las {brandIds.length} marcas</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={split}
+                    onClick={() => setSplit(true)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-left ${split ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950' : 'border-stone-200 dark:border-stone-700'}`}
+                  >
+                    <span className="font-medium">Separar: una por marca</span>
+                    <span className="block text-stone-500 dark:text-stone-400">Pedidos distintos · se crean {brandIds.length} con el mismo plan</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-wrap gap-2">
-              <select className={input} value={brand} onChange={(ev) => setBrand(ev.target.value)} aria-label="Marca">
-                <option value="">{e.suggested_brand ? `Marca… (sugerida: ${e.suggested_brand})` : 'Marca…'}</option>
-                {brands
-                  .filter((b) => !b.archived)
-                  .map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-              </select>
               <select className={input} value={priority} onChange={(ev) => setPriority(ev.target.value as Priority)} aria-label="Prioridad">
                 <option value="P1">P1 · hoy</option>
                 <option value="P2">P2 · semana</option>
@@ -364,7 +408,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
                 Cancelar
               </button>
               <button type="submit" className={btnPrimary} disabled={busy}>
-                {busy ? 'Guardando…' : mode === 'asignar' ? 'Crear y asignar' : 'Crear pendiente'}
+                {busy ? 'Guardando…' : splitting ? `Crear ${brandIds.length} (una por marca)` : mode === 'asignar' ? 'Crear y asignar' : 'Crear pendiente'}
               </button>
             </div>
           </form>

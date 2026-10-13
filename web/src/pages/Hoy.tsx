@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { gmailThreadUrl, isOverdue, memberName, progress, shortDate, todayISO, useBoard } from '../lib/data'
 import { supabase, uniqueChannel } from '../lib/supabase'
 import { PRIORITY_ORDER, type Activity, type AgentRun, type Brand, type Email, type Member, type Sticker, type Subtask, type Task } from '../lib/types'
 import { dotClass } from '../components/colors'
-import { BrandChip } from '../components/Initiative'
 import { TaskCard } from '../components/TaskCard'
 import { SummaryBoard } from '../components/SummaryBoard'
 import { EmailTaskModal, type ExistingItem } from '../components/EmailTaskModal'
@@ -404,14 +404,11 @@ function EmailRow({
           </span>
         )}
         {!e.mentioned && e.addressed && e.addressed !== 'para' && <Tag>{e.addressed === 'copia' ? 'En copia' : 'Por lista'}</Tag>}
-        {e.brand_id ? (
-          <BrandChip brand={brands.find((b) => b.id === e.brand_id)} />
-        ) : (
-          e.suggested_brand && (
-            <span className="rounded border border-dashed border-violet-300 px-1.5 py-0.5 text-[10px] text-violet-700 dark:border-violet-700 dark:text-violet-300">
-              ✦ ¿Marca: {e.suggested_brand}?
-            </span>
-          )
+        <BrandChips ids={brandIdsOf(e)} brands={brands} hideEmpty />
+        {e.suggested_brand && (
+          <span className="rounded border border-dashed border-violet-300 px-1.5 py-0.5 text-[10px] text-violet-700 dark:border-violet-700 dark:text-violet-300">
+            ✦ ¿Marca: {e.suggested_brand}?
+          </span>
         )}
         {e.draft_created && <Tag tone="accent">Borrador listo</Tag>}
         {e.reply_by && <Tag tone="warning">antes del {shortDate(e.reply_by)}</Tag>}
@@ -530,7 +527,7 @@ function BrandProgress({ brands, tasks, stickers }: { brands: Brand[]; tasks: Ta
       <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/tablero">Ver tablero</Link>}>Avance por marca</SectionTitle>
       <div className="space-y-2.5">
         {brands.map((b) => {
-          const mine = tasks.filter((t) => t.brand_id === b.id)
+          const mine = tasks.filter((t) => hasBrand(t, b.id))
           const p = progress(mine, stickers)
           const late = mine.filter((t) => isOverdue(t.due_date, t.status === 'hecho' || t.status === 'cancelado')).length
           return (

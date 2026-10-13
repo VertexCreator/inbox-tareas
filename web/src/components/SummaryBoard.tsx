@@ -5,6 +5,7 @@ import type { AgentRun, Brand, Email, SummaryData } from '../lib/types'
 import { chipClass } from './colors'
 import { splitSummaryText, type Level } from '../lib/summary'
 import { Card, relativeDate } from './ui'
+import { BrandChips, brandIdsOf, hasBrand } from './Brands'
 
 const LANES: { key: Level; label: string; head: string; bar: string; empty: string; visible: number; startOpen: boolean }[] = [
   { key: 'P1', label: 'Responder hoy', head: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-200', bar: 'bg-red-500', empty: 'Nada urgente para hoy.', visible: 4, startOpen: true },
@@ -54,8 +55,8 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
   const legacy = useMemo(() => (d ? null : splitSummaryText(run?.summary)), [d, run?.summary])
   const headline = d?.headline || legacy?.headline || ''
 
-  const brandsInInbox = brands.filter((b) => emails.some((e) => e.brand_id === b.id))
-  const filtered = emails.filter((e) => (!brand || e.brand_id === brand) && (!onlyMentions || e.mentioned))
+  const brandsInInbox = brands.filter((b) => emails.some((e) => hasBrand(e, b.id)))
+  const filtered = emails.filter((e) => (!brand || hasBrand(e, brand)) && (!onlyMentions || e.mentioned))
   const since = prevRun?.ran_at ?? null
   const mentionsCount = emails.filter((e) => e.mentioned).length
 
@@ -90,7 +91,7 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
             onClick={() => setBrand(brand === b.id ? '' : b.id)}
             className={`rounded-lg px-2.5 py-1 text-xs ${brand === b.id ? `${chipClass(b.color)} font-medium` : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-900 dark:text-stone-300'}`}
           >
-            {b.name} {emails.filter((e) => e.brand_id === b.id).length}
+            {b.name} {emails.filter((e) => hasBrand(e, b.id)).length}
           </button>
         ))}
         <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs">
@@ -173,7 +174,7 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
                       key={e.id}
                       email={e}
                       bar={lane.bar}
-                      brand={brands.find((b) => b.id === e.brand_id)}
+                      brands={brands}
                       url={gmailThreadUrl(e.gmail_thread_id, account)}
                       created={created.includes(e.id)}
                       onDone={() => onDone(e.id)}
@@ -215,7 +216,7 @@ export function SummaryBoard({ run, prevRun, todayCount, emails, brands, account
 function EmailCard({
   email: e,
   bar,
-  brand,
+  brands,
   url,
   created,
   onDone,
@@ -227,7 +228,7 @@ function EmailCard({
 }: {
   email: Email
   bar: string
-  brand?: Brand
+  brands: Brand[]
   url: string | null
   created: boolean
   onDone: () => void
@@ -280,12 +281,9 @@ function EmailCard({
         {!e.mentioned && e.addressed && e.addressed !== 'para' && (
           <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500 dark:bg-stone-800">{e.addressed === 'copia' ? 'en copia' : 'por lista'}</span>
         )}
-        {brand ? (
-          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${chipClass(brand.color)}`}>{brand.name}</span>
-        ) : (
-          e.suggested_brand && (
-            <span className="rounded border border-dashed border-violet-300 px-1.5 py-0.5 text-[10px] text-violet-700 dark:border-violet-700 dark:text-violet-300">¿{e.suggested_brand}?</span>
-          )
+        <BrandChips ids={brandIdsOf(e)} brands={brands} hideEmpty />
+        {e.suggested_brand && (
+          <span className="rounded border border-dashed border-violet-300 px-1.5 py-0.5 text-[10px] text-violet-700 dark:border-violet-700 dark:text-violet-300">¿{e.suggested_brand}?</span>
         )}
         {due && <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${due.cls}`}>{due.text}</span>}
         {e.draft_created && <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] text-indigo-700 dark:bg-indigo-950 dark:text-indigo-200">borrador listo</span>}

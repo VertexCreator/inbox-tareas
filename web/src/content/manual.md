@@ -47,6 +47,7 @@ en la actividad, y el resumen del día avisa si vence.
 |---|---|
 | **Marca** | Cada cliente o marca que maneja el equipo (por ejemplo Peros, Asperox). Tiene un color. |
 | **Iniciativa** | Un trabajo concreto de una marca: "Video de producto para TikTok". Es cada tarjeta del tablero. |
+| **Multimarca** | Una iniciativa que involucra a varias marcas a la vez (un lanzamiento conjunto de Vaseline y Axe). Lleva la etiqueta **Multimarca** y las marcas que la forman; la primera (★) es la principal. |
 | **Sticker de estatus** | Dónde está la iniciativa: Por revisar, En proceso, Falta información, En diseño, Revisión de presupuesto, Listo, Publicada, Por pagar, Cancelado… Cada sticker es una columna del tablero. |
 | **Responsable** | La persona a cargo de la iniciativa. Solo pueden serlo quienes el gerente autorizó. |
 | **Subtarea** | Un paso de la iniciativa ("Guion", "Edición"), con su propia persona y fecha. |
@@ -61,6 +62,8 @@ Arriba hay una pestaña por marca:
   tienen observación. Haz clic en una tarjeta para entrar a esa marca.
 - **Una marca:** muestra solo sus iniciativas, con la barra de avance (iniciativas y subtareas terminadas) y
   cuántas hay en cada sticker.
+- **Multimarca:** junta las iniciativas con dos o más marcas. Cada una aparece también en la pestaña de **cada**
+  una de sus marcas y cuenta en el avance de todas ellas.
 - **Sin marca:** aparece si hay iniciativas a las que todavía no se les asignó marca.
 
 Debajo están las columnas, una por sticker, en el orden que definió el gerente. Desplázate a los lados para ver
@@ -131,6 +134,16 @@ firma.
   ya existe con otro nombre) y la marca queda puesta en ese pendiente y en todos los que la sugerían.
 - La **×** descarta la sugerencia.
 
+**Correos con varias marcas:** el script de Gmail detecta todas las marcas que nombra un correo y le pasa al
+agente el párrafo de cada una. El agente decide:
+
+- **Una iniciativa multimarca:** si es el mismo trabajo para varias marcas, crea **un** pendiente con todas ellas.
+- **Iniciativas distintas por marca:** si el correo pide cosas distintas a cada marca, las **separa**: un
+  pendiente por marca, cada uno con lo suyo.
+
+Para cambiar las marcas (solo el gerente), en el detalle de la iniciativa o del plan pulsa **+ Marca** para sumar
+otra, **×** para quitarla, o haz clic en una marca para volverla la principal.
+
 **El gerente** convierte los pendientes en iniciativas:
 
 1. **Planificar:** el dashboard propone al instante una iniciativa con subtareas. Usa la plantilla que mejor
@@ -161,7 +174,8 @@ Algunos detalles de la recomendación:
     - **Crear pendiente** abre una ventana con todo precargado desde el correo (título, descripción, marca,
       prioridad y fecha). Elige **Asignar ahora**: propone responsable y subtareas con persona y fecha según la
       plantilla, y la iniciativa va directo al tablero. O elige **Planificar después**: queda en Listas con la
-      recomendación lista. Por defecto el correo se marca como atendido. Si ya tiene pendiente, el botón dice
+      recomendación lista. Si el correo tiene varias marcas, elige **Una iniciativa multimarca** o **Separar: una
+      por marca** (crea una por cada marca con el mismo plan). Por defecto el correo se marca como atendido. Si ya tiene pendiente, el botón dice
       **✓ Con pendiente** y la ventana te avisa antes de crear otro.
     - El contador grande dice cuántos hay y "+N nuevos" cuántos llegaron desde la revisión anterior. **Ver los N**
       despliega el resto.

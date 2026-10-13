@@ -89,7 +89,7 @@ export async function updateSubtask(id: string, patch: Partial<Pick<Subtask, 'do
 
 export async function updateTask(
   id: string,
-  patch: Partial<Pick<Task, 'due_date' | 'priority' | 'title' | 'description' | 'sticker_id' | 'observation' | 'brand_id' | 'assignee_id'>>,
+  patch: Partial<Pick<Task, 'due_date' | 'priority' | 'title' | 'description' | 'sticker_id' | 'observation' | 'brand_id' | 'brand_ids' | 'assignee_id'>>,
 ) {
   const { error } = await supabase.from('tasks').update(patch).eq('id', id)
   if (error) throw new Error(error.message)

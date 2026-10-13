@@ -57,6 +57,7 @@ export interface Task {
   list_item_id: string | null
   completed_at: string | null
   brand_id: string | null
+  brand_ids: string[]
   sticker_id: string | null
   observation: string | null
   observation_at: string | null
@@ -100,6 +101,7 @@ export interface ListItem {
   email_id: string | null
   created_by: string | null
   brand_id: string | null
+  brand_ids: string[]
   suggested_brand: string | null
   auto_plan: boolean
   created_at: string
@@ -138,6 +140,7 @@ export interface Proposal {
   title: string
   description: string | null
   brand_id?: string | null
+  brand_ids?: string[]
   main_skill: string | null
   assignee_id: string | null
   recommended_id: string | null
@@ -198,6 +201,7 @@ export interface Email {
   status: 'pendiente' | 'respondido' | 'archivado'
   received_at: string | null
   brand_id: string | null
+  brand_ids: string[]
   suggested_brand: string | null
   mentioned: boolean
   addressed: 'para' | 'copia' | 'lista' | null

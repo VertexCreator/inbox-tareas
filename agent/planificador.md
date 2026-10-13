@@ -31,7 +31,8 @@ select public.draft_auto_plans();
 ```
 Después busca los borradores (los recién armados y los que pidió el gerente con **Planificar**):
 ```sql
-select r.id as rec_id, r.proposal, i.title, i.notes, i.due_date, t.name as plantilla, t.items as plantilla_items
+select r.id as rec_id, r.proposal, i.title, i.notes, i.due_date, t.name as plantilla, t.items as plantilla_items,
+       (select string_agg(b.name, ' + ') from public.brands b where b.id = any (i.brand_ids)) as marcas, i.brand_ids
 from public.plan_recommendations r
 join public.list_items i on i.id = r.list_item_id
 left join public.plan_templates t on t.id = r.template_id
@@ -72,6 +73,8 @@ Parte de `proposal` y devuelve **el mismo formato** con estos ajustes:
   ("Copywriting avanzado · carga 40%").
 - **`title`**, **`description`**: puedes mejorar la redacción; la descripción la ve todo el equipo.
 - Mantén `priority`, `effort_points`, `due_date` y `brand_id` de la tarea, salvo que las notas indiquen otra cosa.
+- **Multimarca:** si el pendiente tiene varias marcas (`brand_ids` con 2 o más), no las cambies ni las quites:
+  la base las conserva. Reparte las subtareas pensando en cada marca si las notas lo piden.
 - El `assignee_id` principal tiene que tener `can_own = true`; si nadie autorizado encaja, déjalo `null`.
 - **No** incluyas `recommended_id`: la base lo completa con tus responsables.
 

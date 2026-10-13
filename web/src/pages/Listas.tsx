@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
+import { BrandChips, BrandPicker, brandIdsOf } from '../components/Brands'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, shortDate, useBoard } from '../lib/data'
 import { supabase, uniqueChannel } from '../lib/supabase'
 import type { Brand, ItemStatus, ListItem, ListRow, PlanTemplate, Priority } from '../lib/types'
-import { BrandChip, SuggestedBrand } from '../components/Initiative'
+import { SuggestedBrand } from '../components/Initiative'
 import { PlanPanel } from '../components/PlanPanel'
 import { Avatar, Card, Empty, PriorityBadge, btn, btnPrimary, input } from '../components/ui'
 
@@ -141,8 +142,8 @@ export function Listas() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       {item.priority && <PriorityBadge priority={item.priority} />}
-                      {item.brand_id && <BrandChip brand={brands.find((b) => b.id === item.brand_id)} />}
-                      {!item.brand_id && item.suggested_brand && (
+                      {item.brand_id && <BrandChips ids={brandIdsOf(item)} brands={brands} />}
+                      {item.suggested_brand && (
                         <SuggestedBrand itemId={item.id} name={item.suggested_brand} brands={brands} isAdmin={isAdmin} onAccepted={() => { load(); reloadBoard() }} />
                       )}
                       <span className={`truncate font-medium ${item.status === 'descartado' ? 'text-stone-400 line-through' : ''}`}>{item.title}</span>
@@ -235,7 +236,7 @@ export function Listas() {
 
 function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[]; onCreated: () => void }) {
   const { isAdmin } = useAuth()
-  const [brand, setBrand] = useState('')
+  const [brandIds, setBrandIds] = useState<string[]>([])
   const [autoPlan, setAutoPlan] = useState(true)
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
@@ -254,7 +255,7 @@ function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[
       notes: notes.trim() || null,
       due_date: due || null,
       priority: priority || null,
-      brand_id: brand || null,
+      brand_ids: brandIds,
       auto_plan: !isAdmin && autoPlan,
     })
     setBusy(false)
@@ -263,6 +264,7 @@ function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[
     setNotes('')
     setDue('')
     setPriority('')
+    setBrandIds([])
     onCreated()
   }
 
@@ -280,16 +282,7 @@ function NewItem({ listId, brands, onCreated }: { listId: string; brands: Brand[
           }}
         />
         <input className={`${input} w-56`} placeholder="Detalles (opcional)" value={notes} onChange={(e) => setNotes(e.target.value)} aria-label="Detalles" />
-        {brands.length > 0 && (
-          <select className={input} value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Marca">
-            <option value="">Marca</option>
-            {brands.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        )}
+        <BrandPicker value={brandIds} onChange={setBrandIds} brands={brands} />
         <input type="date" className={input} value={due} onChange={(e) => setDue(e.target.value)} aria-label="Fecha límite" />
         <select className={input} value={priority} onChange={(e) => setPriority(e.target.value as Priority | '')} aria-label="Prioridad">
           <option value="">Prioridad</option>

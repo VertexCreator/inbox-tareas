@@ -148,7 +148,7 @@ function revisarCorreos() {
         const cuerpo = cuerpoNuevo_(m.getPlainBody());
         const asunto = m.getSubject() || '';
         const menciones = buscarMenciones_(cuerpo, misAlias, yo);
-        const marcasHalladas = buscarMarcas_(asunto + '\n' + cuerpo, marcas, [de.email].concat(para, copia));
+        const marcasHalladas = buscarMarcas_(asunto, cuerpo, marcas, [de.email].concat(para, copia));
         const relevante = menciones.length > 0 || marcasHalladas.nombres.length > 0;
 
         const esVip = coincide_(de.email, vip);
@@ -178,6 +178,8 @@ function revisarCorreos() {
           fila.brands_mentioned = marcasHalladas.nombres;
           // Primero los párrafos donde te mencionan; si no hay, donde nombran tus marcas.
           fila.mention_excerpts = extractos_(cuerpo, menciones.length ? menciones : marcasHalladas.posiciones);
+          // Un párrafo por marca: Claude ve si las marcas comparten una iniciativa (multimarca) o piden cosas distintas.
+          if (marcasHalladas.nombres.length > 1) fila.brand_excerpts = extractosPorMarca_(cuerpo, marcasHalladas);
           fila.attachments = m.getAttachments({ includeInlineImages: false }).slice(0, 10).map((a) => a.getName());
         }
         salida.push(fila);
@@ -335,25 +337,45 @@ function buscarMenciones_(cuerpo, alias, miCorreo) {
   return pos.sort((a, b) => a - b);
 }
 
-// Marcas nombradas como palabra completa (para que "axe" no salte en "taxes") o por dominio de quien participa.
-function buscarMarcas_(texto, marcas, correos) {
-  const t = sinTildes_(texto);
+// Marcas nombradas como palabra completa (para que "axe" no salte en "taxes") en el asunto o el cuerpo,
+// o por dominio de quien participa. Las posiciones son del cuerpo, para recortar sus párrafos.
+function buscarMarcas_(asunto, cuerpo, marcas, correos) {
+  const ta = sinTildes_(asunto);
+  const t = sinTildes_(cuerpo);
   const nombres = [];
   const posiciones = [];
+  const porMarca = {};
   marcas.forEach((m) => {
     let hallada = false;
+    const mias = [];
     m.terminos.forEach((term) => {
-      const re = new RegExp('(^|[^a-z0-9])' + escaparRegex_(term) + '(?![a-z0-9])', 'g');
+      const patron = '(^|[^a-z0-9])' + escaparRegex_(term) + '(?![a-z0-9])';
+      if (new RegExp(patron).test(ta)) hallada = true;
+      const re = new RegExp(patron, 'g');
       let r;
       while ((r = re.exec(t))) {
         hallada = true;
-        posiciones.push(r.index + r[1].length);
+        mias.push(r.index + r[1].length);
       }
     });
     if (!hallada && m.dominios.some((d) => correos.some((c) => c.slice(-(d.length + 1)) === '@' + d || c.endsWith('.' + d)))) hallada = true;
-    if (hallada) nombres.push(m.nombre);
+    if (hallada) {
+      nombres.push(m.nombre);
+      porMarca[m.nombre] = mias.sort((a, b) => a - b);
+      Array.prototype.push.apply(posiciones, mias);
+    }
   });
-  return { nombres: nombres, posiciones: posiciones.sort((a, b) => a - b) };
+  return { nombres: nombres, posiciones: posiciones.sort((a, b) => a - b), porMarca: porMarca };
+}
+
+// { "Vaseline": "párrafo…", "Axe": "párrafo…" }. Si la marca solo aparece en el asunto o por dominio, lo dice.
+function extractosPorMarca_(cuerpo, halladas) {
+  const out = {};
+  halladas.nombres.forEach((n) => {
+    const pos = halladas.porMarca[n] || [];
+    out[n] = pos.length ? extractos_(cuerpo, pos.slice(0, 2)) : '(solo en el asunto o por el dominio de alguien en copia)';
+  });
+  return out;
 }
 
 // El párrafo alrededor de cada posición (sin repetir), hasta MAX_EXTRACTOS.

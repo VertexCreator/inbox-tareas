@@ -16,6 +16,7 @@ import {
 import type { Brand, Member, Sticker, Subtask, Task } from '../lib/types'
 import { chipClass } from './colors'
 import { LinkedEmail } from './LinkedEmail'
+import { BrandChips, BrandPicker, brandIdsOf } from './Brands'
 import { Avatar, PriorityBadge, btn, btnPrimary, input } from './ui'
 
 export interface BoardCtx {
@@ -30,10 +31,7 @@ export function StickerPill({ sticker }: { sticker?: Sticker | null }) {
   return <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] ${chipClass(sticker.color)}`}>{sticker.name}</span>
 }
 
-export function BrandChip({ brand }: { brand?: Brand | null }) {
-  if (!brand) return <span className="rounded px-1.5 py-0.5 text-[10px] text-stone-400 ring-1 ring-stone-200 dark:ring-stone-700">Sin marca</span>
-  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${chipClass(brand.color)}`}>{brand.name}</span>
-}
+export { BrandChip } from './Brands'
 
 // Tarjeta compacta del tablero.
 export function InitiativeCard({ task, ctx, onOpen, showBrand = true }: { task: Task; ctx: BoardCtx; onOpen: () => void; showBrand?: boolean }) {
@@ -54,7 +52,7 @@ export function InitiativeCard({ task, ctx, onOpen, showBrand = true }: { task: 
       } ${closed ? 'opacity-70' : ''}`}
     >
       <div className="flex items-center justify-between gap-2">
-        {showBrand ? <BrandChip brand={ctx.brands.find((b) => b.id === task.brand_id)} /> : <span />}
+        {showBrand ? <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} /> : <span />}
         {task.priority === 'P1' && <PriorityBadge priority="P1" />}
       </div>
       <div className={`mt-1 text-[13px] font-medium ${sticker?.category === 'cancelado' ? 'line-through' : ''}`}>{task.title}</div>
@@ -130,23 +128,13 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           {isAdmin ? (
-            <select
-              className={`${input} py-1 text-xs`}
-              value={task.brand_id ?? ''}
-              onChange={(e) => run(() => updateTask(task.id, { brand_id: e.target.value || null }))}
-              aria-label="Marca"
-            >
-              <option value="">Sin marca</option>
-              {ctx.brands
-                .filter((b) => !b.archived || b.id === task.brand_id)
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-            </select>
+            <BrandPicker
+              value={brandIdsOf(task)}
+              brands={ctx.brands}
+              onChange={(ids) => run(() => updateTask(task.id, { brand_ids: ids }))}
+            />
           ) : (
-            <BrandChip brand={ctx.brands.find((b) => b.id === task.brand_id)} />
+            <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />
           )}
           <button className={btn} onClick={onClose} aria-label="Cerrar">
             Cerrar

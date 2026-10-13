@@ -59,7 +59,7 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
 ```sql
 select id, gmail_message_id, gmail_thread_id, from_name, from_email, subject, received_at,
        snippet, attachments, is_vip, is_automatic,
-       to_count, cc_count, addressed, mentioned, mention_excerpts, brands_mentioned
+       to_count, cc_count, addressed, mentioned, mention_excerpts, brands_mentioned, brand_excerpts
 from public.email_queue where status = 'pendiente' order by received_at limit 200;
 ```
 - `snippet` es el cuerpo ya limpio (sin firmas ni texto citado) y recortado. Úsalo para decidir.
@@ -75,7 +75,8 @@ from public.email_queue where status = 'pendiente' order by received_at limit 20
     sus marcas, es informativo: `ninguna` o P3, sin pendiente.
   - En el `summary` empieza por lo que le toca a ella: "Te piden confirmar el presupuesto de Vaseline antes del
     jueves 16 (hilo con 5 personas)".
-  - Si un correo nombra varias de sus marcas con pedidos distintos, crea un pendiente por marca en el paso 5.
+  - `brand_excerpts`: cuando nombran **dos o más** marcas, el párrafo de cada una (`{"Vaseline": "…", "Axe": "…"}`).
+    Úsalo para decidir si es **una iniciativa multimarca** o **iniciativas distintas por marca** (ver paso 3).
 - `is_automatic`: notificación automática (noreply, pestaña Notificaciones, listas). Normalmente es
   `ninguna`, salvo que pida una acción real (un banco, un pago, un plazo).
 - Si hay 200 filas, procesa estas y vuelve a consultar hasta vaciar la cola.
@@ -100,7 +101,21 @@ Para cada uno decide:
   Si coincide con una marca de la lista (por nombre o alias), pon `"brand": "Nombre exacto"`. Si es claramente
   una marca que el equipo maneja pero **no está en la lista**, pon `"suggested_brand": "Nombre"`: el gerente la
   verá sugerida y la creará con un clic. Si el correo no es de una marca (banco, proveedor interno, notificación),
-  no pongas ninguna. Si menciona varias, elige la principal.
+  no pongas ninguna.
+
+  **Varias marcas en un correo.** Pon en `"brands"` todas las marcas de la compañía que tienen algo que ver con
+  lo que piden, con la principal primero (la que más pesa o la que abre el correo), y repite la principal en
+  `"brand"`. No cuentes una marca nombrada de paso (en una firma, en un cronograma general, como competencia).
+  Luego decide, con `brand_excerpts` y el `snippet`, cuál de estos dos casos es, porque cambia el paso 5:
+  - **Iniciativa multimarca:** un mismo trabajo que involucra varias marcas (un lanzamiento conjunto, un
+    evento o una campaña que reúne a Vaseline y Axe, un mismo entregable con piezas de cada una). → **un
+    solo** pendiente con `"brands": [...]`; en el dashboard queda marcado como **Multimarca**.
+  - **Iniciativas distintas por marca:** pedidos separados que solo comparten el correo ("para Vaseline el
+    presupuesto; aparte, para Axe aprobar la pieza"). → **un pendiente por marca**, cada uno con su `"brand"`
+    y solo lo que se pide para esa marca. **Se tienen que separar.**
+  - Si tienes dudas, sepáralos: es más fácil para el gerente juntar que separar.
+  - Un correo informativo que nombra 4 o más marcas sin pedirle nada concreto a ella (un newsletter, un
+    cronograma general) no crea pendientes; regístralo con `brands` solo si a ella le toca algo.
 
 Registra **cada** correo de la cola (la basura ya la registró el script):
 ```sql
@@ -112,6 +127,7 @@ select public.ingest_email($json$ {
   "draft_created": false, "brand": "Peros", "mentioned": true, "addressed": "copia"
 } $json$::jsonb);
 ```
+Con varias marcas, en vez de solo `brand`: `"brand": "Vaseline", "brands": ["Vaseline", "Axe"]`.
 
 Después, marca como procesados los que registraste (los `id` de la cola):
 ```sql
@@ -137,7 +153,13 @@ select public.create_item_from_email($json$ {
   "brand": "Peros"
 } $json$::jsonb);
 ```
-- `brand` / `suggested_brand`: la misma marca que dedujiste en el paso 3 (si no pones nada, se usa la del correo).
+- `brand` / `suggested_brand`: la misma marca que dedujiste en el paso 3 (si no pones nada, se usan **todas** las
+  del correo).
+- **Correo con varias marcas** (paso 3):
+  - Iniciativa multimarca → un solo pendiente con `"brand": "Vaseline", "brands": ["Vaseline", "Axe"]`.
+    En `notes` di qué le toca a cada marca.
+  - Iniciativas distintas → un `create_item_from_email` por marca, cada uno con **solo** su `"brand"`, su
+    título ("Presupuesto lanzamiento Vaseline", "Aprobar pieza de pauta Axe"), sus notas y su fecha.
 - Usa en el título palabras del tipo de trabajo (campaña, newsletter, evento, nota de prensa, blog…): así la
   base elige la plantilla correcta.
 - `due_date`: la fecha que pide el correo; si no hay, déjala vacía (la base usa 14 días).
@@ -173,8 +195,11 @@ corridas anteriores (`select ... from public.emails where status = 'pendiente' a
 - `iniciativas`: iniciativas del tablero (de correos **o creadas a mano**) que vencen hoy o están vencidas, como
   `[{ "title", "brand", "owner", "due", "overdue" }]`. Máximo 5, primero las vencidas:
   ```sql
-  select t.title, b.name as brand, m.name as owner, t.due_date as due, t.due_date < current_date as overdue
-  from public.tasks t left join public.brands b on b.id = t.brand_id
+  select t.title,
+         (select string_agg(b.name, ' + ' order by array_position(t.brand_ids, b.id))
+          from public.brands b where b.id = any (t.brand_ids)) as brand,
+         m.name as owner, t.due_date as due, t.due_date < current_date as overdue
+  from public.tasks t
   left join public.team_members m on m.id = t.assignee_id
   where t.status in ('por_hacer','en_curso') and t.due_date <= current_date
   order by t.due_date limit 5;

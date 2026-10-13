@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { BrandPicker } from './Brands'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useBoard } from '../lib/data'
@@ -25,7 +26,8 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [brand, setBrand] = useState('')
+  const [brandIds, setBrandIds] = useState<string[]>([])
+  const brand = brandIds[0] ?? ''
   const [due, setDue] = useState('')
   const [priority, setPriority] = useState<Priority>('P2')
   const [owner, setOwner] = useState('')
@@ -101,7 +103,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
         p: {
           title,
           description,
-          brand_id: brand || null,
+          brand_ids: brandIds,
           assignee_id: owner || null,
           due_date: due || null,
           sticker_id: sticker || null,
@@ -132,7 +134,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
         list_id: listId,
         title: title.trim(),
         notes: description.trim() || null,
-        brand_id: brand || null,
+        brand_ids: brandIds,
         due_date: due || null,
         priority,
         auto_plan: !isAdmin && autoPlan,
@@ -259,15 +261,8 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
               />
             </div>
 
+            <BrandPicker value={brandIds} onChange={setBrandIds} brands={liveBrands} />
             <div className="flex flex-wrap gap-2">
-              <select className={input} value={brand} onChange={(e) => setBrand(e.target.value)} aria-label="Marca">
-                <option value="">Marca…</option>
-                {liveBrands.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
               <input type="date" className={input} value={due} onChange={(e) => setDue(e.target.value)} aria-label="Fecha límite" />
               <select className={input} value={priority} onChange={(e) => setPriority(e.target.value as Priority)} aria-label="Prioridad">
                 <option value="P1">P1 · hoy</option>

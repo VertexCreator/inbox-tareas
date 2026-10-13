@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { useAuth } from '../lib/auth'
 import { isOverdue, memberName, progress, shortDate, todayISO, updateSubtask, updateTask, useBoard } from '../lib/data'
 import type { Task } from '../lib/types'
 import { chipClass } from '../components/colors'
-import { BrandChip, InitiativeDetail, StickerPill, SubtaskEditor, type BoardCtx } from '../components/Initiative'
+import { InitiativeDetail, StickerPill, SubtaskEditor, type BoardCtx } from '../components/Initiative'
 import { Card, Empty, SectionTitle, btn, input } from '../components/ui'
 
 // Vista tipo ticket: todo lo que tiene que hacer una persona, con su desglose.
@@ -23,7 +24,7 @@ export function Tickets() {
 
   const owned = tasks
     .filter((t) => (t.assignee_id ?? t.suggested_assignee_id) === personId)
-    .filter((t) => !brand || t.brand_id === brand)
+    .filter((t) => !brand || hasBrand(t, brand))
     .filter((t) => showClosed || !isClosed(t))
     .sort((a, b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999'))
 
@@ -31,13 +32,13 @@ export function Tickets() {
     .filter((s) => s.assignee_id === personId && (showClosed || !s.done))
     .map((s) => ({ s, t: tasks.find((t) => t.id === s.task_id) }))
     .filter((x): x is { s: (typeof subtasks)[number]; t: Task } => !!x.t && (x.t.assignee_id ?? x.t.suggested_assignee_id) !== personId)
-    .filter((x) => !brand || x.t.brand_id === brand)
+    .filter((x) => !brand || hasBrand(x.t, brand))
     .sort((a, b) => (a.s.due_date ?? '9999').localeCompare(b.s.due_date ?? '9999'))
 
   const allMine = tasks.filter((t) => (t.assignee_id ?? t.suggested_assignee_id) === personId)
   const overall = progress(allMine, stickers)
   const overdue = allMine.filter((t) => isOverdue(t.due_date, isClosed(t))).length
-  const myBrands = brands.filter((b) => allMine.some((t) => t.brand_id === b.id) || helping.some((h) => h.t.brand_id === b.id))
+  const myBrands = brands.filter((b) => allMine.some((t) => hasBrand(t, b.id)) || helping.some((h) => hasBrand(h.t, b.id)))
   const open = tasks.find((t) => t.id === openId)
 
   return (
@@ -117,7 +118,7 @@ export function Tickets() {
                     {t.title} · responsable {memberName(members, t.assignee_id) ?? '—'}
                   </button>
                 </div>
-                <BrandChip brand={brands.find((b) => b.id === t.brand_id)} />
+                <BrandChips ids={brandIdsOf(t)} brands={brands} />
                 <span className={`text-xs ${isOverdue(s.due_date, s.done) ? 'font-medium text-red-600' : 'text-stone-500'}`}>{shortDate(s.due_date)}</span>
               </div>
             ))}
@@ -153,7 +154,7 @@ function Ticket({ task, ctx, onOpen, onChanged, canEdit }: { task: Task; ctx: Bo
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <BrandChip brand={ctx.brands.find((b) => b.id === task.brand_id)} />
+            <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />
             <StickerPill sticker={sticker} />
             <span className={`text-xs ${overdue ? 'font-medium text-red-600 dark:text-red-400' : dueSoon ? 'font-medium text-amber-700 dark:text-amber-300' : 'text-stone-500'}`}>
               {task.due_date ? `${overdue ? 'Venció' : dueSoon ? 'Vence hoy' : 'Vence'} ${shortDate(task.due_date)}` : 'Sin fecha límite'}
