@@ -114,6 +114,9 @@ export const btn =
   'rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:bg-stone-100 active:scale-[0.98] disabled:opacity-50 dark:border-stone-700 dark:hover:bg-stone-800'
 export const btnPrimary =
   'rounded-lg bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 active:scale-[0.98] disabled:opacity-50'
+// Botón para abrir el detalle de una tarea: destacado porque es la puerta a todo lo demás.
+export const btnDetail =
+  'rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950 dark:text-indigo-200 dark:hover:bg-indigo-900'
 export const input =
   'rounded-lg border border-stone-300 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-stone-700 dark:bg-stone-900'
 

@@ -4,7 +4,8 @@ import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { ForwardBadge } from '../components/ForwardStatus'
 import { InitiativeDetail, StickerPill, SubtaskEditor, type BoardCtx } from '../components/Initiative'
 import { chipClass } from '../components/colors'
-import { Card, btn, input } from '../components/ui'
+import { Card, btn, btnDetail as detailBtn, input } from '../components/ui'
+import { EmailModal } from '../components/TaskEmail'
 import { useAuth } from '../lib/auth'
 import { memberName, shortDate, todayISO, updateSubtask, updateTask, useBoard } from '../lib/data'
 import { useForwards } from '../lib/forwards'
@@ -359,6 +360,8 @@ function DueText({ due }: { due: string | null }) {
 
 function PendingRow({ item: i, ctx, canAct, onComplete, onOpen, onChanged }: { item: Item; ctx: BoardCtx; canAct: boolean; onComplete: () => void; onOpen: () => void; onChanged: () => void }) {
   const [expanded, setExpanded] = useState(false)
+  const [moreText, setMoreText] = useState(false)
+  const [emailOpen, setEmailOpen] = useState(false)
   const [confirm, setConfirm] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -415,7 +418,16 @@ function PendingRow({ item: i, ctx, canAct, onComplete, onOpen, onChanged }: { i
               en «{t.title}»
             </button>
           ) : (
-            t.description && <div className="line-clamp-2 text-sm text-stone-600 dark:text-stone-300">{t.description}</div>
+            t.description && (
+              <div className="text-sm text-stone-600 dark:text-stone-300">
+                <div className={moreText ? 'whitespace-pre-line' : 'line-clamp-2'}>{t.description}</div>
+                {t.description.length > 140 && (
+                  <button className="text-xs font-medium text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => setMoreText((v) => !v)}>
+                    {moreText ? 'Ver menos' : 'Ver más'}
+                  </button>
+                )}
+              </div>
+            )
           )}
           {t.observation && i.kind === 'iniciativa' && <div className="mt-1 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800 dark:bg-amber-950 dark:text-amber-200">💬 {t.observation}</div>}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -425,9 +437,16 @@ function PendingRow({ item: i, ctx, canAct, onComplete, onOpen, onChanged }: { i
                 {expanded ? '▾' : '▸'} Subtareas {subs.length - openSubs}/{subs.length}
               </button>
             )}
-            <button className="text-xs text-stone-500 hover:underline dark:text-stone-400" onClick={onOpen}>
-              Ver detalle
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button className={detailBtn} onClick={onOpen}>
+              Ver detalle →
             </button>
+            {t.email_id && (
+              <button className={`${btn} px-3 py-1.5 text-xs`} onClick={() => setEmailOpen(true)}>
+                ✉ Ver correo
+              </button>
+            )}
           </div>
           {confirm && (
             <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-100">
@@ -446,6 +465,7 @@ function PendingRow({ item: i, ctx, canAct, onComplete, onOpen, onChanged }: { i
               <SubtaskEditor task={t} subtasks={subs} members={ctx.members} canEdit={canAct} run={runSub} />
             </div>
           )}
+          {emailOpen && <EmailModal task={t} members={ctx.members} schedule={ctx.forwardSchedule} onClose={() => setEmailOpen(false)} />}
         </div>
       </div>
     </div>
@@ -485,8 +505,8 @@ function DoneRow({ item: i, ctx, canAct, onReopen, onOpen }: { item: Item; ctx: 
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
-        <button className={`${btn} px-2 py-1 text-xs`} onClick={onOpen}>
-          Detalle
+        <button className={detailBtn} onClick={onOpen}>
+          Ver detalle →
         </button>
         {canAct && !i.cancelled && (
           <button className={`${btn} px-2 py-1 text-xs`} onClick={onReopen} title="Volver a Pendientes">

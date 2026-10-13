@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { ForwardCountdown } from './ForwardStatus'
 import type { ForwardSchedule } from '../lib/forwards'
 import { useAuth } from '../lib/auth'
-import { memberName, relativeShort } from '../lib/data'
+import { gmailThreadUrl, memberName, relativeShort } from '../lib/data'
 import { supabase, uniqueChannel } from '../lib/supabase'
 import type { Member, Task } from '../lib/types'
 import { btn } from './ui'
@@ -58,7 +58,7 @@ function Linkified({ text }: { text: string }) {
 }
 
 // Texto del correo: los renglones citados (">") en gris y el historial del hilo plegado.
-function Body({ text }: { text: string }) {
+function Body({ text, full: fullView = false }: { text: string; full?: boolean }) {
   const [showHistory, setShowHistory] = useState(false)
   const [full, setFull] = useState(false)
   const { main, history } = useMemo(() => {
@@ -66,7 +66,7 @@ function Body({ text }: { text: string }) {
     if (!m || m.index === undefined || m.index < 20) return { main: text, history: '' }
     return { main: text.slice(0, m.index).trimEnd(), history: text.slice(m.index) }
   }, [text])
-  const long = main.length > 1500
+  const long = !fullView && main.length > 1500
   const render = (t: string): ReactNode =>
     t.split('\n').map((line, i) => (
       <div key={i} className={line.startsWith('>') ? 'border-l-2 border-stone-300 pl-2 text-stone-500 dark:border-stone-700 dark:text-stone-400' : ''}>
@@ -103,7 +103,9 @@ const FORWARD_TEXT: Record<Forward['status'], string> = {
 
 // Correo original de la iniciativa, guardado por el script al asignarla. Lo ven el gerente, el responsable y
 // quienes tienen subtareas en ella (la base no se lo entrega a nadie más).
-export function TaskEmail({ task, members, schedule }: { task: Task; members: Member[]; schedule?: ForwardSchedule }) {
+export function TaskEmail({ task, members, schedule, variant = 'section' }: { task: Task; members: Member[]; schedule?: ForwardSchedule; variant?: 'section' | 'modal' }) {
+  const modal = variant === 'modal'
+  const [big, setBig] = useState(false)
   const { isAdmin } = useAuth()
   const [content, setContent] = useState<Content | null>(null)
   const [forwards, setForwards] = useState<Forward[]>([])
@@ -140,8 +142,20 @@ export function TaskEmail({ task, members, schedule }: { task: Task; members: Me
     load()
   }
 
-  if (!loaded || !task.email_id) return null
+  if (!loaded || !task.email_id) return modal && loaded ? <p className="text-sm text-stone-500">Esta tarea no tiene un correo vinculado.</p> : null
   if (!content && forwards.length === 0) {
+    if (modal) {
+      return (
+        <p className="text-sm text-stone-500 dark:text-stone-400">
+          El texto del correo todavía no está guardado. Se guarda cuando la iniciativa se asigna a alguien.
+          {isAdmin && task.assignee_id && (
+            <button className={`${btn} ml-2 px-2 py-0.5 text-xs`} onClick={retry}>
+              Guardar y reenviar ahora
+            </button>
+          )}
+        </p>
+      )
+    }
     if (!isAdmin) return null
     return (
       <section className="mt-5 rounded-lg border border-dashed border-stone-300 p-3 text-xs text-stone-500 dark:border-stone-700 dark:text-stone-400">
@@ -161,13 +175,23 @@ export function TaskEmail({ task, members, schedule }: { task: Task; members: Me
   const images = content?.attachments.filter((a) => a.inline) ?? []
 
   return (
-    <section className="mt-5 rounded-lg border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
-      <button className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        <span className="text-xs font-medium text-stone-600 dark:text-stone-300">✉ Correo original</span>
-        <span className="text-xs text-stone-400">{open ? '▾' : '▸'}</span>
-      </button>
-      {open && (
-        <div className="space-y-3 border-t border-stone-200 px-3 py-3 dark:border-stone-800">
+    <section className={modal ? '' : 'mt-5 rounded-lg border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900'}>
+      {!modal && (
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          <button className="flex flex-1 items-center gap-2 text-left" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+            <span className="text-xs text-stone-400">{open ? '▾' : '▸'}</span>
+            <span className="text-xs font-medium text-stone-600 dark:text-stone-300">✉ Correo original</span>
+          </button>
+          {content && (
+            <button className="rounded-md px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950" onClick={() => setBig(true)}>
+              ⤢ Ver en grande
+            </button>
+          )}
+        </div>
+      )}
+      {big && <EmailModal task={task} members={members} schedule={schedule} onClose={() => setBig(false)} />}
+      {(open || modal) && (
+        <div className={modal ? 'space-y-3' : 'space-y-3 border-t border-stone-200 px-3 py-3 dark:border-stone-800'}>
           {last && (
             <div
               className={`rounded-md px-2.5 py-1.5 text-xs ${
@@ -229,11 +253,66 @@ export function TaskEmail({ task, members, schedule }: { task: Task; members: Me
                   <span className="basis-full text-[11px] text-stone-400">Los archivos llegaron en el correo "Asignación TeamFlow".</span>
                 </div>
               )}
-              {content.body_text ? <Body text={content.body_text} /> : <div className="text-xs text-stone-500">El correo no tiene texto.</div>}
+              {content.body_text ? <Body text={content.body_text} full={modal} /> : <div className="text-xs text-stone-500">El correo no tiene texto.</div>}
             </>
           )}
         </div>
       )}
     </section>
+  )
+}
+
+// Ventana grande con todo el correo: para leerlo completo sin abrir el detalle.
+export function EmailModal({ task, members, schedule, onClose }: { task: Task; members: Member[]; schedule?: ForwardSchedule; onClose: () => void }) {
+  const { isAdmin, member } = useAuth()
+  const [thread, setThread] = useState<string | null>(null)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  // Solo el gerente tiene el correo en su Gmail.
+  useEffect(() => {
+    if (!isAdmin || !task.email_id) return
+    supabase
+      .from('emails')
+      .select('gmail_thread_id')
+      .eq('id', task.email_id)
+      .maybeSingle()
+      .then(({ data }) => setThread(data?.gmail_thread_id ?? null))
+  }, [isAdmin, task.email_id])
+  const gmail = gmailThreadUrl(thread, member?.email)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-3 py-6 sm:px-6" onClick={onClose}>
+      <div
+        className="w-full max-w-3xl rounded-xl border border-stone-200 bg-white shadow-2xl dark:border-stone-800 dark:bg-stone-900"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label={`Correo de ${task.title}`}
+      >
+        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-stone-200 bg-white px-5 py-3 dark:border-stone-800 dark:bg-stone-900">
+          <div className="min-w-0">
+            <div className="text-xs text-stone-500 dark:text-stone-400">✉ Correo de la tarea</div>
+            <div className="truncate font-medium">{task.title}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            {gmail && (
+              <a className={btn} href={gmail} target="_blank" rel="noreferrer">
+                Abrir en Gmail ↗
+              </a>
+            )}
+            <button className={btn} onClick={onClose}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+        <div className="px-5 py-4">
+          <TaskEmail task={task} members={members} schedule={schedule} variant="modal" />
+        </div>
+      </div>
+    </div>
   )
 }

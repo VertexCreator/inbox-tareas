@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Member, Subtask, Task, TaskStatus } from '../lib/types'
+import type { Member, Sticker, Subtask, Task } from '../lib/types'
 import {
   approveTask,
   isOverdue,
@@ -12,9 +12,7 @@ import {
   updateTaskStatus,
 } from '../lib/data'
 import { useAuth } from '../lib/auth'
-import { Avatar, PriorityBadge, Tag, btn, btnPrimary, input } from './ui'
-
-const FLOW: TaskStatus[] = ['por_hacer', 'en_curso', 'hecho']
+import { Avatar, PriorityBadge, Tag, btn, btnDetail, btnPrimary, input } from './ui'
 
 interface Props {
   task: Task
@@ -23,18 +21,23 @@ interface Props {
   onChanged: () => void
   compact?: boolean
   subtasks?: Subtask[]
+  stickers?: Sticker[]
+  onOpen?: () => void
+  onOpenEmail?: () => void
 }
 
-export function TaskCard({ task, members, isAdmin, onChanged, compact = false, subtasks = [] }: Props) {
+export function TaskCard({ task, members, isAdmin, onChanged, compact = false, subtasks = [], stickers = [], onOpen, onOpenEmail }: Props) {
+  const { member } = useAuth()
   const [correcting, setCorrecting] = useState(false)
   const [open, setOpen] = useState(false)
+  const [moreText, setMoreText] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const assigneeId = task.assignee_id ?? task.suggested_assignee_id
   const assignee = memberName(members, assigneeId)
   const pending = task.needs_approval && !task.assignee_id
-  const idx = FLOW.indexOf(task.status)
+  const canStage = isAdmin || (!!member && task.assignee_id === member.id)
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -73,7 +76,14 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
       </div>
 
       {!compact && task.description && (
-        <p className="mt-1 line-clamp-2 text-xs text-stone-500 dark:text-stone-400">{task.description}</p>
+        <div className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+          <p className={moreText ? 'whitespace-pre-line' : 'line-clamp-2'}>{task.description}</p>
+          {task.description.length > 140 && (
+            <button className="font-medium text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => setMoreText((v) => !v)}>
+              {moreText ? 'Ver menos' : 'Ver más'}
+            </button>
+          )}
+        </div>
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -118,27 +128,40 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
             {pending ? `Sugerido: ${assignee ?? 'nadie'}` : assignee ?? 'Sin asignar'}
           </span>
         </div>
-        {!pending && (
-          <div className="flex gap-1">
-            <button
-              className={`${btn} px-2 py-0.5`}
-              disabled={busy || idx <= 0}
-              onClick={() => run(() => updateTaskStatus(task.id, FLOW[idx - 1]))}
-              aria-label="Mover a la columna anterior"
+        {!pending && stickers.length > 0 && (
+          <label className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
+            Etapa
+            <select
+              className={`${input} py-0.5 text-xs`}
+              value={task.sticker_id ?? ''}
+              disabled={busy || !canStage}
+              onChange={(e) => run(() => updateTask(task.id, { sticker_id: e.target.value }))}
+              title={canStage ? 'Cambiar la etapa de la tarea' : 'La cambia el responsable o el gerente'}
             >
-              ←
-            </button>
-            <button
-              className={`${btn} px-2 py-0.5`}
-              disabled={busy || idx >= FLOW.length - 1}
-              onClick={() => run(() => updateTaskStatus(task.id, FLOW[idx + 1]))}
-              aria-label="Mover a la columna siguiente"
-            >
-              →
-            </button>
-          </div>
+              {stickers.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
+
+      {(onOpen || (onOpenEmail && task.email_id)) && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {onOpen && (
+            <button className={btnDetail} onClick={onOpen}>
+              Ver detalle →
+            </button>
+          )}
+          {onOpenEmail && task.email_id && (
+            <button className={btn} onClick={onOpenEmail}>
+              ✉ Ver correo
+            </button>
+          )}
+        </div>
+      )}
 
       {task.assignment_reason && (
         <div className={`mt-2 rounded-md px-2 py-1 text-[11px] ${pending ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200' : 'bg-stone-50 text-stone-500 dark:bg-stone-800/60 dark:text-stone-400'}`}>

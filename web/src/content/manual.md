@@ -132,6 +132,8 @@ Los cambios se guardan solos y aparecen en las pantallas de todos en pocos segun
 Cuando el correo sale, al gerente le aparece un aviso abajo a la derecha. "Enviado" quiere decir que Gmail lo
 envió; si la dirección no existe, el aviso de rebote llega a la bandeja del gerente.
 
+En la sección **✉ Correo original**, **⤢ Ver en grande** abre el correo completo en una ventana.
+
 Lo ven el gerente, el responsable y quienes tienen subtareas en la iniciativa. Si se reasigna, se le reenvía a la
 persona nueva. Si te la asignas a ti, no se reenvía. El gerente puede pulsar **Reenviar de nuevo**, y lo apaga en
 Configuración → Script de Gmail → **Reenviar el correo al asignar**. Gmail acepta hasta 25 MB por correo: si los
@@ -146,7 +148,9 @@ iniciativas de otras personas (cada fila dice cuál es cuál).
 - **Pendientes**, ordenadas por urgencia: Vencidas, Hoy, Mañana, Próximos 7 días, Más adelante y Sin fecha límite.
   - Marca el **círculo ✓** para terminarla. Una iniciativa pasa a la etapa que cuenta como *Terminado*; si le
     quedan subtareas abiertas, te pregunta antes.
-  - **▸ Subtareas** despliega las de la iniciativa para marcarlas ahí mismo. **Ver detalle** abre todo.
+  - **▸ Subtareas** despliega las de la iniciativa para marcarlas ahí mismo. **Ver detalle →** abre todo.
+  - **Ver más** muestra la descripción completa. **✉ Ver correo** abre el correo original completo en una ventana
+    grande (el gerente también tiene **Abrir en Gmail**).
 - **✓ Terminadas:** todo lo que terminaste, agrupado por Hoy, Ayer, Esta semana y Antes, con la hora. **Reabrir** la
   devuelve a Pendientes.
 - Al terminar algo aparece un aviso abajo con **Deshacer** y **Ver terminadas**.
@@ -253,6 +257,8 @@ Algunos detalles de la recomendación:
   - equipo de hoy (carga y lo que terminó cada uno), avance por marca y actividad reciente.
 - **Equipo:** tus pendientes ordenados en Vencidas, Hoy, Esta semana y Más adelante, más la actividad del
   equipo.
+  - En cada tarjeta, **Etapa** cambia la etapa de tu tarea (la casilla la marca como terminada).
+  - **Ver detalle →** abre la tarea completa y **✉ Ver correo** el correo original, si lo tiene.
 
 ## 8. Equipo
 

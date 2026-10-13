@@ -7,9 +7,12 @@ import { supabase, uniqueChannel } from '../lib/supabase'
 import { PRIORITY_ORDER, type Activity, type AgentRun, type Brand, type Email, type Member, type Sticker, type Subtask, type Task } from '../lib/types'
 import { dotClass } from '../components/colors'
 import { TaskCard } from '../components/TaskCard'
+import { InitiativeDetail, type BoardCtx } from '../components/Initiative'
+import { EmailModal } from '../components/TaskEmail'
+import { useForwards } from '../lib/forwards'
 import { SummaryBoard } from '../components/SummaryBoard'
 import { EmailTaskModal, type ExistingItem } from '../components/EmailTaskModal'
-import { Avatar, Card, Empty, LoadBar, PriorityBadge, SectionTitle, Tag, btn, relativeDate } from '../components/ui'
+import { Avatar, Card, Empty, LoadBar, PriorityBadge, SectionTitle, Tag, btn, btnDetail, relativeDate } from '../components/ui'
 
 // Horario del análisis: lunes a viernes 8:00, 13:00 y 18:00; domingo 21:00.
 function nextRun(now = new Date()) {
@@ -61,7 +64,13 @@ export function Hoy() {
 
 function HoyGerente() {
   const { member } = useAuth()
-  const { tasks, subtasks, members, brands, stickers, reload } = useBoard()
+  const { tasks, subtasks, members, brands, stickers, agencies, reload } = useBoard()
+  const { byTask: forwards, schedule: forwardSchedule } = useForwards()
+  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [emailId, setEmailId] = useState<string | null>(null)
+  const detail = tasks.find((t) => t.id === detailId)
+  const emailOf = tasks.find((t) => t.id === emailId)
   const [emails, setEmails] = useState<Email[]>([])
   const [todayCount, setTodayCount] = useState(0)
   const [run, setRun] = useState<AgentRun | null>(null)
@@ -275,7 +284,17 @@ function HoyGerente() {
                 </Card>
               )}
               {approvals.map((t) => (
-                <TaskCard key={t.id} task={t} members={members} isAdmin onChanged={reload} subtasks={subtasks.filter((s) => s.task_id === t.id)} />
+                <TaskCard
+                  key={t.id}
+                  task={t}
+                  members={members}
+                  isAdmin
+                  onChanged={reload}
+                  subtasks={subtasks.filter((s) => s.task_id === t.id)}
+                  stickers={stickers}
+                  onOpen={() => setDetailId(t.id)}
+                  onOpenEmail={() => setEmailId(t.id)}
+                />
               ))}
             </div>
           </section>
@@ -309,6 +328,8 @@ function HoyGerente() {
           <ActivityFeed />
         </div>
       </div>
+      {detail && <InitiativeDetail task={detail} ctx={ctx} onClose={() => setDetailId(null)} onChanged={reload} />}
+      {emailOf && <EmailModal task={emailOf} members={members} schedule={forwardSchedule} onClose={() => setEmailId(null)} />}
     </div>
   )
 }
@@ -613,7 +634,13 @@ function ActivityFeed() {
 
 function HoyMiembro() {
   const { member } = useAuth()
-  const { tasks, subtasks, members, reload } = useBoard()
+  const { tasks, subtasks, members, brands, stickers, agencies, reload } = useBoard()
+  const { byTask: forwards, schedule: forwardSchedule } = useForwards()
+  const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [emailId, setEmailId] = useState<string | null>(null)
+  const detail = tasks.find((t) => t.id === detailId)
+  const emailOf = tasks.find((t) => t.id === emailId)
   const me = members.find((m) => m.id === member?.id)
   const today = todayISO()
   const { to } = weekRange()
@@ -630,13 +657,33 @@ function HoyMiembro() {
       key: t.id,
       due: t.due_date,
       priority: t.priority,
-      node: <TaskCard task={t} members={members} isAdmin={false} onChanged={reload} subtasks={subtasks.filter((s) => s.task_id === t.id)} />,
+      node: (
+        <TaskCard
+          task={t}
+          members={members}
+          isAdmin={false}
+          onChanged={reload}
+          subtasks={subtasks.filter((s) => s.task_id === t.id)}
+          stickers={stickers}
+          onOpen={() => setDetailId(t.id)}
+          onOpenEmail={() => setEmailId(t.id)}
+        />
+      ),
     })),
     ...mySubs.map((s) => ({
       key: s.id,
       due: s.due_date,
       priority: 'P2',
-      node: <MySubtask subtask={s} parent={tasks.find((t) => t.id === s.task_id)!} members={members} onChanged={reload} />,
+      node: (
+        <MySubtask
+          subtask={s}
+          parent={tasks.find((t) => t.id === s.task_id)!}
+          members={members}
+          onChanged={reload}
+          onOpen={() => setDetailId(s.task_id)}
+          onOpenEmail={() => setEmailId(s.task_id)}
+        />
+      ),
     })),
   ].sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999') || PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
 
@@ -682,11 +729,13 @@ function HoyMiembro() {
         </div>
         <ActivityFeed />
       </div>
+      {detail && <InitiativeDetail task={detail} ctx={ctx} onClose={() => setDetailId(null)} onChanged={reload} />}
+      {emailOf && <EmailModal task={emailOf} members={members} schedule={forwardSchedule} onClose={() => setEmailId(null)} />}
     </div>
   )
 }
 
-function MySubtask({ subtask: s, parent, members, onChanged }: { subtask: Subtask; parent: Task; members: Member[]; onChanged: () => void }) {
+function MySubtask({ subtask: s, parent, members, onChanged, onOpen, onOpenEmail }: { subtask: Subtask; parent: Task; members: Member[]; onChanged: () => void; onOpen: () => void; onOpenEmail: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const owner = memberName(members, parent.assignee_id)
   const overdue = isOverdue(s.due_date, s.done)
@@ -709,6 +758,16 @@ function MySubtask({ subtask: s, parent, members, onChanged }: { subtask: Subtas
           {s.due_date ? `${overdue ? 'venció' : 'vence'} ${shortDate(s.due_date)}` : 'sin fecha'}
         </span>
       </label>
+      <div className="mt-2 flex flex-wrap gap-1.5 pl-6">
+        <button className={btnDetail} onClick={onOpen}>
+          Ver detalle →
+        </button>
+        {parent.email_id && (
+          <button className={btn} onClick={onOpenEmail}>
+            ✉ Ver correo
+          </button>
+        )}
+      </div>
       {error && <div className="mt-1 text-[13px] text-red-600 dark:text-red-400">{error}</div>}
     </div>
   )
