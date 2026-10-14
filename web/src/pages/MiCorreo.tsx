@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useUndo } from '../lib/undo'
 import plantilla from '../content/MiCorreo.gs?raw'
 import { EmailTaskModal, type ExistingItem } from '../components/EmailTaskModal'
 import { SummaryBoard } from '../components/SummaryBoard'
@@ -18,6 +19,11 @@ interface Connection {
   last_forward_check: string | null
   last_count: number
   last_junk: number
+}
+
+async function ok(p: PromiseLike<{ error: { message: string } | null }>) {
+  const { error } = await p
+  if (error) throw new Error(error.message)
 }
 
 export function MiCorreo() {
@@ -102,8 +108,17 @@ export function MiCorreo() {
     if (error) setError(error.message)
     load()
   }
-  const move = (e: Email, to: Level | 'ninguna') => run(() => supabase.rpc('set_my_email_priority', { p_email_id: e.id, p_priority: to }))
-  const done = (id: string) => run(() => supabase.rpc('mark_my_email', { p_email_id: id, p_status: 'respondido' }))
+  const { track } = useUndo()
+  const move = async (e: Email, to: Level | 'ninguna') => {
+    const prev = e.priority
+    await run(() => supabase.rpc('set_my_email_priority', { p_email_id: e.id, p_priority: to }))
+    track(`Moviste «${e.subject ?? 'el correo'}» a ${to === 'ninguna' ? 'sin prioridad' : to}`, () => ok(supabase.rpc('set_my_email_priority', { p_email_id: e.id, p_priority: prev })), { after: load })
+  }
+  const done = async (id: string) => {
+    await run(() => supabase.rpc('mark_my_email', { p_email_id: id, p_status: 'respondido' }))
+    const e = emails.find((x) => x.id === id) ?? quiet.find((x) => x.id === id)
+    track(`Marcaste como listo el correo «${e?.subject ?? ''}»`, () => ok(supabase.rpc('mark_my_email', { p_email_id: id, p_status: 'pendiente' })), { after: load })
+  }
   const ask = (e: Email, wantsReply: boolean) => run(() => supabase.rpc('request_email_analysis', { p_email_id: e.id, p_wants_reply: wantsReply }))
 
   if (!member) return null

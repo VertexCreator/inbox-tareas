@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { UndoButton } from '../lib/undo'
 import { ForwardToasts } from './ForwardStatus'
 import { supabase } from '../lib/supabase'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
@@ -55,6 +56,7 @@ export function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-sm text-stone-500 dark:text-stone-400">
+            <UndoButton />
             <button
               className="inline-flex h-8 items-center gap-1 rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white hover:bg-indigo-700 active:scale-95"
               onClick={() => setAdding(true)}

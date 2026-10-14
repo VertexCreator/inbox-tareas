@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { useUndo } from '../lib/undo'
 import { useForwards } from '../lib/forwards'
 import { useAuth } from '../lib/auth'
 import { isOverdue, progress, updateTask, useBoard } from '../lib/data'
@@ -24,6 +25,7 @@ export function Tablero() {
   const [openId, setOpenId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [stageError, setStageError] = useState<string | null>(null)
+  const { track } = useUndo()
   // Arrastrar tarjetas entre etapas: la tarjeta se mueve al instante y se guarda en la base.
   const [dragId, setDragId] = useState<string | null>(null)
   const [overStage, setOverStage] = useState<string | null>(null)
@@ -39,7 +41,9 @@ export function Tablero() {
     setStageError(null)
     setMoved((m) => ({ ...m, [t.id]: stageId }))
     try {
+      const prev = t.sticker_id
       await updateTask(t.id, { sticker_id: stageId })
+      track(`Moviste «${t.title}» a ${stickers.find((s) => s.id === stageId)?.name ?? 'otra etapa'}`, () => updateTask(t.id, { sticker_id: prev }), { after: reload })
     } catch (e) {
       setStageError(e instanceof Error ? e.message : 'No se pudo mover.')
     }

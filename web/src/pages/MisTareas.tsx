@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { useUndo } from '../lib/undo'
 import { useSearchParams } from 'react-router-dom'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { ForwardBadge } from '../components/ForwardStatus'
@@ -20,11 +21,6 @@ type Item =
   | { kind: 'iniciativa'; id: string; task: Task; due: string | null; doneAt: string | null; cancelled: boolean }
   | { kind: 'subtarea'; id: string; task: Task; sub: Subtask; due: string | null; doneAt: string | null; cancelled: false }
 
-interface Undo {
-  id: number
-  text: string
-  undo: () => Promise<void>
-}
 
 function addDays(iso: string, n: number) {
   const d = new Date(iso + 'T00:00')
@@ -68,10 +64,9 @@ export function MisTareas() {
   // El correo de asignación enlaza aquí con ?abrir=<iniciativa>.
   const [openId, setOpenId] = useState<string | null>(params.get('abrir'))
   const [showOlder, setShowOlder] = useState(false)
-  const [undo, setUndo] = useState<Undo | null>(null)
   const [flash, setFlash] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { track } = useUndo()
   const { byTask: forwards, schedule: forwardSchedule } = useForwards()
   const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
 
@@ -112,16 +107,13 @@ export function MisTareas() {
   const myBrands = brands.filter((b) => allMine.some((t) => hasBrand(t, b.id)))
   const open = tasks.find((t) => t.id === openId)
 
-  useEffect(() => () => {
-    if (undoTimer.current) clearTimeout(undoTimer.current)
-  }, [])
-
-  const notify = (text: string, undoFn: () => Promise<void>) => {
-    if (undoTimer.current) clearTimeout(undoTimer.current)
-    setUndo({ id: Date.now(), text, undo: undoFn })
-    setFlash(true)
-    setTimeout(() => setFlash(false), 1200)
-    undoTimer.current = setTimeout(() => setUndo(null), 8000)
+  // Aviso global con "↶ Deshacer" (y "Ver terminadas" al terminar algo).
+  const notify = (text: string, undoFn: () => Promise<void>, toDone = false) => {
+    track(text, undoFn, { after: reload, action: toDone ? { label: 'Ver terminadas', onClick: () => setTab('terminadas') } : undefined })
+    if (toDone) {
+      setFlash(true)
+      setTimeout(() => setFlash(false), 1200)
+    }
   }
 
   const run = async (fn: () => Promise<void>) => {
@@ -139,25 +131,25 @@ export function MisTareas() {
   const complete = async (i: Item) => {
     if (i.kind === 'subtarea') {
       if (await run(() => updateSubtask(i.sub.id, { done: true })))
-        notify(`✓ "${i.sub.title}" pasó a Terminadas`, () => updateSubtask(i.sub.id, { done: false }))
+        notify(`Marcaste «${i.sub.title}» como terminada`, () => updateSubtask(i.sub.id, { done: false }), true)
       return
     }
     const target = doneStage(stickers)
     if (!target) return setError('No hay ninguna etapa que cuente como "Terminado". El gerente puede crearla en el tablero.')
     const prev = i.task.sticker_id
     if (await run(() => updateTask(i.task.id, { sticker_id: target.id })))
-      notify(`✓ "${i.task.title}" pasó a Terminadas (${target.name})`, () => updateTask(i.task.id, { sticker_id: prev }))
+      notify(`Marcaste «${i.task.title}» como terminada (${target.name})`, () => updateTask(i.task.id, { sticker_id: prev }), true)
   }
 
   const reopen = async (i: Item) => {
     if (i.kind === 'subtarea') {
-      if (await run(() => updateSubtask(i.sub.id, { done: false }))) notify(`"${i.sub.title}" volvió a Pendientes`, () => updateSubtask(i.sub.id, { done: true }))
+      if (await run(() => updateSubtask(i.sub.id, { done: false }))) notify(`Reabriste «${i.sub.title}»`, () => updateSubtask(i.sub.id, { done: true }))
       return
     }
     const target = reopenStage(stickers)
     const prev = i.task.sticker_id
     if (target && (await run(() => updateTask(i.task.id, { sticker_id: target.id }))))
-      notify(`"${i.task.title}" volvió a Pendientes (${target.name})`, () => updateTask(i.task.id, { sticker_id: prev }))
+      notify(`Reabriste «${i.task.title}» (${target.name})`, () => updateTask(i.task.id, { sticker_id: prev }))
   }
 
   const canAct = (i: Item) => isAdmin || (i.kind === 'subtarea' ? i.sub.assignee_id === member?.id : i.task.assignee_id === member?.id)
@@ -268,27 +260,6 @@ export function MisTareas() {
                 ))}
               </Group>
             ),
-          )}
-        </div>
-      )}
-
-      {undo && (
-        <div className="fixed bottom-4 left-1/2 z-40 flex w-[min(92vw,34rem)] -translate-x-1/2 flex-wrap items-center gap-x-3 gap-y-1 rounded-xl bg-stone-900 px-4 py-3 text-sm text-white shadow-xl dark:bg-stone-100 dark:text-stone-900" role="status" aria-live="polite">
-          <span className="min-w-0 flex-1">{undo.text}</span>
-          <button
-            className="font-medium text-emerald-300 hover:underline dark:text-emerald-700"
-            onClick={async () => {
-              const u = undo
-              setUndo(null)
-              await run(u.undo)
-            }}
-          >
-            Deshacer
-          </button>
-          {tab !== 'terminadas' && (
-            <button className="font-medium text-sky-300 hover:underline dark:text-sky-700" onClick={() => { setTab('terminadas'); setUndo(null) }}>
-              Ver terminadas
-            </button>
           )}
         </div>
       )}

@@ -17,6 +17,26 @@ y se convierten en iniciativas con ayuda del agente.
 - **Modo claro u oscuro:** el botón con el sol o la luna en la barra de arriba cambia el tema al instante.
   El dashboard lo recuerda en tu navegador.
 
+## Deshacer
+
+Casi todo lo que haces se puede deshacer:
+
+- marcar una tarea o subtarea como terminada, o reabrirla;
+- mover una iniciativa de etapa, incluso arrastrándola en el tablero;
+- cambiar responsable, fecha, marcas, agencia, nombre, descripción u observación;
+- borrar una subtarea;
+- marcar un correo como listo o cambiarle la prioridad;
+- descartar un pendiente.
+
+Hay tres formas de hacerlo:
+
+- **El aviso de abajo:** dice qué hiciste y tiene un botón grande **↶ Deshacer**. Se cierra solo en 10 segundos
+  (la barrita verde muestra cuánto queda).
+- **El botón ↶ Deshacer de la barra de arriba:** aparece mientras haya algo para deshacer de los últimos
+  5 minutos. Deshace la última acción; si hay varias, muestra cuántas y puedes pulsarlo de nuevo. Al pasar el
+  mouse dice qué va a deshacer.
+- **El teclado:** ⌘Z en Mac o Ctrl+Z en Windows, cuando no estás escribiendo en un campo.
+
 ## Agregar una tarea a mano
 
 Usa el botón **+ Nueva tarea** de la barra de arriba, desde cualquier página, para lo que no llegó por correo.

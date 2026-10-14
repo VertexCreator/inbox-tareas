@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import { Layout } from './components/Layout'
+import { UndoProvider } from './lib/undo'
 import { ChangePassword, Login, NoAccess } from './pages/Login'
 import { Hoy } from './pages/Hoy'
 import { Tablero } from './pages/Tablero'
@@ -28,21 +29,23 @@ function Gate() {
   if (!member) return <NoAccess email={session.user.email ?? ''} onSignOut={signOut} />
 
   return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<Hoy />} />
-        <Route path="listas" element={<Listas />} />
-        <Route path="tablero" element={<Tablero />} />
-        <Route path="mis-tareas" element={<MisTareas />} />
-        <Route path="mi-correo" element={<MiCorreo />} />
-        <Route path="tickets" element={<ToMisTareas />} />
-        <Route path="ayuda" element={<Ayuda />} />
-        <Route path="equipo" element={<Equipo />} />
-        {isAdmin && <Route path="configuracion" element={<Configuracion />} />}
-        <Route path="reglas" element={<Navigate to="/configuracion" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
+    <UndoProvider>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<Hoy />} />
+          <Route path="listas" element={<Listas />} />
+          <Route path="tablero" element={<Tablero />} />
+          <Route path="mis-tareas" element={<MisTareas />} />
+          <Route path="mi-correo" element={<MiCorreo />} />
+          <Route path="tickets" element={<ToMisTareas />} />
+          <Route path="ayuda" element={<Ayuda />} />
+          <Route path="equipo" element={<Equipo />} />
+          {isAdmin && <Route path="configuracion" element={<Configuracion />} />}
+          <Route path="reglas" element={<Navigate to="/configuracion" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </UndoProvider>
   )
 }
 

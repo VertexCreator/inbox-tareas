@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useUndo } from '../lib/undo'
 import type { Member, Sticker, Subtask, Task } from '../lib/types'
 import {
   approveTask,
@@ -28,6 +29,7 @@ interface Props {
 
 export function TaskCard({ task, members, isAdmin, onChanged, compact = false, subtasks = [], stickers = [], onOpen, onOpenEmail }: Props) {
   const { member } = useAuth()
+  const { track } = useUndo()
   const [correcting, setCorrecting] = useState(false)
   const [open, setOpen] = useState(false)
   const [moreText, setMoreText] = useState(false)
@@ -66,7 +68,14 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
               className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600"
               checked={task.status === 'hecho'}
               disabled={busy}
-              onChange={(e) => run(() => updateTaskStatus(task.id, e.target.checked ? 'hecho' : 'por_hacer'))}
+              onChange={(e) => {
+                const next = e.target.checked ? 'hecho' : 'por_hacer'
+                const prev = task.status
+                run(async () => {
+                  await updateTaskStatus(task.id, next)
+                  track(next === 'hecho' ? `Marcaste «${task.title}» como terminada` : `Reabriste «${task.title}»`, () => updateTaskStatus(task.id, prev))
+                })
+              }}
               aria-label="Marcar como completada"
             />
           )}
@@ -135,7 +144,14 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
               className={`${input} py-0.5 text-xs`}
               value={task.sticker_id ?? ''}
               disabled={busy || !canStage}
-              onChange={(e) => run(() => updateTask(task.id, { sticker_id: e.target.value }))}
+              onChange={(e) => {
+                const next = e.target.value
+                const prev = task.sticker_id
+                run(async () => {
+                  await updateTask(task.id, { sticker_id: next })
+                  track(`Moviste «${task.title}» a ${stickers.find((st) => st.id === next)?.name ?? 'otra etapa'}`, () => updateTask(task.id, { sticker_id: prev }))
+                })
+              }}
               title={canStage ? 'Cambiar la etapa de la tarea' : 'La cambia el responsable o el gerente'}
             >
               {stickers.map((st) => (

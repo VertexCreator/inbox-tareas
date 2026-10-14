@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useUndo } from '../lib/undo'
 import { useForwards, type ForwardRow, type ForwardSchedule } from '../lib/forwards'
 import { ForwardBadge } from '../components/ForwardStatus'
 import { BrandChips, BrandPicker, brandIdsOf } from '../components/Brands'
@@ -150,10 +151,15 @@ export function Listas() {
     if (error) setError(error.message)
     else load()
   }
+  const { track } = useUndo()
   const discard = async (item: ListItem) => {
     const { error } = await supabase.from('list_items').update({ status: 'descartado' }).eq('id', item.id)
-    if (error) setError(error.message)
-    else load()
+    if (error) return setError(error.message)
+    load()
+    track(`Descartaste «${item.title}»`, async () => {
+      const { error } = await supabase.from('list_items').update({ status: item.status }).eq('id', item.id)
+      if (error) throw new Error(error.message)
+    }, { after: load })
   }
 
   const ctx: Ctx = {

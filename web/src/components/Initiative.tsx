@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useUndo } from '../lib/undo'
 import { ForwardBadge } from './ForwardStatus'
 import type { ForwardRow, ForwardSchedule } from '../lib/forwards'
 import { TaskEmail } from './TaskEmail'
@@ -129,6 +130,15 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
       setError(e instanceof Error ? e.message : 'No se pudo guardar.')
     }
   }
+  // Cada cambio queda con "↶ Deshacer": se guarda el valor anterior de lo que se cambió.
+  const { track } = useUndo()
+  const change = (patch: Parameters<typeof updateTask>[1], label: string) =>
+    run(async () => {
+      const current = task as unknown as Record<string, unknown>
+      const prev = Object.fromEntries(Object.keys(patch).map((k) => [k, current[k] ?? null])) as Parameters<typeof updateTask>[1]
+      await updateTask(task.id, patch)
+      track(label, () => updateTask(task.id, prev), { after: onChanged })
+    })
   const owners = ctx.members.filter((m) => m.active && m.can_own)
 
   return (
@@ -144,7 +154,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
             <BrandPicker
               value={brandIdsOf(task)}
               brands={ctx.brands}
-              onChange={(ids) => run(() => updateTask(task.id, { brand_ids: ids }))}
+              onChange={(ids) => change({ brand_ids: ids }, `Cambiaste las marcas de «${task.title}»`)}
             />
           ) : (
             <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />
@@ -160,7 +170,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
             className="w-full bg-transparent text-xl font-medium outline-none"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => title.trim() && title !== task.title && run(() => updateTask(task.id, { title: title.trim() }))}
+            onBlur={() => title.trim() && title !== task.title && change({ title: title.trim() }, `Renombraste «${task.title}»`)}
             aria-label="Nombre de la iniciativa"
           />
         ) : (
@@ -178,7 +188,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
                 <button
                   key={s.id}
                   disabled={!canStatus || active}
-                  onClick={() => run(() => updateTask(task.id, { sticker_id: s.id }))}
+                  onClick={() => change({ sticker_id: s.id }, `Moviste «${task.title}» a ${s.name}`)}
                   className={`rounded-full px-2.5 py-1 text-xs transition ${chipClass(s.color)} ${
                     active ? 'ring-2 ring-stone-800 ring-offset-1 dark:ring-stone-200 dark:ring-offset-stone-950' : canStatus ? 'opacity-60 hover:opacity-100' : 'opacity-40'
                   }`}
@@ -197,7 +207,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
               <select
                 className={`${input} w-full`}
                 value={task.assignee_id ?? ''}
-                onChange={(e) => e.target.value && run(() => updateTask(task.id, { assignee_id: e.target.value }))}
+                onChange={(e) => e.target.value && change({ assignee_id: e.target.value }, `Asignaste «${task.title}» a ${memberName(ctx.members, e.target.value) ?? 'otra persona'}`)}
               >
                 {!task.assignee_id && <option value="">{pending ? `Sugerido: ${memberName(ctx.members, owner) ?? '—'}` : 'Elige…'}</option>}
                 {owners.map((m) => (
@@ -220,7 +230,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
                 type="date"
                 className={`${input} w-full`}
                 value={task.due_date ?? ''}
-                onChange={(e) => run(() => updateTask(task.id, { due_date: e.target.value || null }))}
+                onChange={(e) => change({ due_date: e.target.value || null }, `Cambiaste la fecha de «${task.title}»`)}
               />
             ) : (
               <span className={isOverdue(task.due_date, task.status === 'hecho') ? 'text-red-600' : ''}>{shortDate(task.due_date)}</span>
@@ -230,7 +240,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
             <label className="space-y-1">
               <span className="block text-xs text-stone-500 dark:text-stone-400">Agencia</span>
               {isAdmin ? (
-                <select className={`${input} w-full`} value={task.agency_id ?? ''} onChange={(e) => run(() => updateTask(task.id, { agency_id: e.target.value || null }))}>
+                <select className={`${input} w-full`} value={task.agency_id ?? ''} onChange={(e) => change({ agency_id: e.target.value || null }, `Cambiaste la agencia de «${task.title}»`)}>
                   <option value="">Sin agencia</option>
                   {ctx.agencies
                     ?.filter((a) => !a.archived || a.id === task.agency_id)
@@ -266,7 +276,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
               placeholder="Qué hay que hacer, entregables, contexto"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => description !== (task.description ?? '') && run(() => updateTask(task.id, { description: description.trim() || null }))}
+              onBlur={() => description !== (task.description ?? '') && change({ description: description.trim() || null }, `Editaste la descripción de «${task.title}»`)}
             />
           ) : (
             <p className="whitespace-pre-line text-sm">{task.description || <span className="text-stone-400">Sin descripción</span>}</p>
@@ -299,12 +309,12 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
                 <button
                   className={btnPrimary}
                   disabled={observation === (task.observation ?? '')}
-                  onClick={() => run(() => updateTask(task.id, { observation: observation.trim() || null }))}
+                  onClick={() => change({ observation: observation.trim() || null }, `Guardaste la observación de «${task.title}»`)}
                 >
                   Guardar observación
                 </button>
                 {task.observation && (
-                  <button className={btn} onClick={() => run(() => updateTask(task.id, { observation: null }))}>
+                  <button className={btn} onClick={() => change({ observation: null }, `Quitaste la observación de «${task.title}»`)}>
                     Quitar
                   </button>
                 )}
@@ -339,6 +349,7 @@ export function SubtaskEditor({
   run: (fn: () => Promise<void>) => Promise<void>
 }) {
   const { member } = useAuth()
+  const { track } = useUndo()
   const [title, setTitle] = useState('')
   const [who, setWho] = useState('')
   const [due, setDue] = useState('')
@@ -374,7 +385,13 @@ export function SubtaskEditor({
                 className="h-4 w-4 accent-emerald-600"
                 checked={s.done}
                 disabled={!canEdit && !mine}
-                onChange={(e) => run(() => updateSubtask(s.id, { done: e.target.checked }))}
+                onChange={(e) => {
+                  const done = e.target.checked
+                  run(async () => {
+                    await updateSubtask(s.id, { done })
+                    track(done ? `Marcaste «${s.title}» como hecha` : `Reabriste «${s.title}»`, () => updateSubtask(s.id, { done: !done }))
+                  })
+                }}
                 aria-label={`Marcar "${s.title}"`}
               />
               {canEdit ? (
@@ -411,7 +428,13 @@ export function SubtaskEditor({
                     onChange={(e) => run(() => updateSubtask(s.id, { due_date: e.target.value || null }))}
                     aria-label="Fecha de la subtarea"
                   />
-                  <button className="px-1 text-stone-400 hover:text-red-600" onClick={() => run(() => deleteSubtask(s.id))} aria-label="Borrar subtarea">
+                  <button className="px-1 text-stone-400 hover:text-red-600" onClick={() =>
+                    run(async () => {
+                      await deleteSubtask(s.id)
+                      track(`Borraste la subtarea «${s.title}»`, () => addSubtask(task.id, s.title, s.position, s.assignee_id, s.due_date))
+                    })
+                  }
+                  aria-label="Borrar subtarea">
                     ×
                   </button>
                 </>

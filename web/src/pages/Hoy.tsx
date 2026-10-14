@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useUndo } from '../lib/undo'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
@@ -53,6 +54,11 @@ function scrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+async function ok(p: PromiseLike<{ error: { message: string } | null }>) {
+  const { error } = await p
+  if (error) throw new Error(error.message)
+}
+
 export function Hoy() {
   const { isAdmin } = useAuth()
   return isAdmin ? <HoyGerente /> : <HoyMiembro />
@@ -64,6 +70,7 @@ export function Hoy() {
 
 function HoyGerente() {
   const { member } = useAuth()
+  const { track } = useUndo()
   const { tasks, subtasks, members, brands, stickers, agencies, reload } = useBoard()
   const { byTask: forwards, schedule: forwardSchedule } = useForwards()
   const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
@@ -139,8 +146,10 @@ function HoyGerente() {
 
   const markEmail = async (id: string) => {
     const { error } = await supabase.from('emails').update({ status: 'respondido' }).eq('id', id)
-    if (error) setError(error.message)
-    else loadInbox()
+    if (error) return setError(error.message)
+    loadInbox()
+    const e = emails.find((x) => x.id === id)
+    track(`Marcaste como listo el correo «${e?.subject ?? ''}»`, () => ok(supabase.from('emails').update({ status: 'pendiente' }).eq('id', id)), { after: loadInbox })
   }
 
   // Arrastrar en el resumen: se ve al instante y queda fijada (el agente no la pisa y aprende de esto).
@@ -149,8 +158,10 @@ function HoyGerente() {
     const { error } = await supabase.rpc('set_email_priority', { p_email_id: e.id, p_priority: to })
     if (error) {
       setError(error.message)
-      loadInbox()
+      return loadInbox()
     }
+    const prev = e.priority
+    track(`Moviste «${e.subject ?? 'el correo'}» a ${to}`, () => ok(supabase.rpc('set_email_priority', { p_email_id: e.id, p_priority: prev })), { after: loadInbox })
   }
 
   const toPending = (e: Email) => setModalEmail(e)
@@ -740,10 +751,12 @@ function MySubtask({ subtask: s, parent, members, onChanged, onOpen, onOpenEmail
   const [error, setError] = useState<string | null>(null)
   const owner = memberName(members, parent.assignee_id)
   const overdue = isOverdue(s.due_date, s.done)
+  const { track } = useUndo()
   const toggle = async (done: boolean) => {
     const { error } = await supabase.from('subtasks').update({ done }).eq('id', s.id)
-    if (error) setError(error.message)
-    else onChanged()
+    if (error) return setError(error.message)
+    onChanged()
+    track(done ? `Marcaste «${s.title}» como hecha` : `Reabriste «${s.title}»`, () => ok(supabase.from('subtasks').update({ done: !done }).eq('id', s.id)), { after: onChanged })
   }
   return (
     <div className="rounded-lg border border-stone-200 bg-white p-3 text-sm dark:border-stone-800 dark:bg-stone-900">
