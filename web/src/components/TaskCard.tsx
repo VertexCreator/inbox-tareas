@@ -79,7 +79,10 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
               aria-label="Marcar como completada"
             />
           )}
-          <span className={`font-medium ${task.status === 'hecho' ? 'text-stone-400 line-through' : ''}`}>{task.title}</span>
+          <span className={`font-medium ${task.status === 'hecho' ? 'text-stone-400 line-through' : ''}`}>
+            {task.recurring_id && <span className="mr-1" title="Tarea repetitiva" aria-label="Tarea repetitiva">🔁</span>}
+            {task.title}
+          </span>
         </label>
         <PriorityBadge priority={task.priority} />
       </div>

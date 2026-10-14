@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { supabase } from '../lib/supabase'
+import { RecurringForm, RecurringList } from '../components/Recurring'
 import { useUndo } from '../lib/undo'
 import { useSearchParams } from 'react-router-dom'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
@@ -15,7 +17,7 @@ import type { Sticker, Subtask, Task } from '../lib/types'
 // Todo lo que le toca a una persona, en dos listas: lo pendiente (por urgencia) y lo que ya terminó.
 // Cuenta: las iniciativas de las que es responsable y sus subtareas en iniciativas de otros.
 
-type Tab = 'pendientes' | 'terminadas'
+type Tab = 'pendientes' | 'terminadas' | 'repetitivas'
 
 type Item =
   | { kind: 'iniciativa'; id: string; task: Task; due: string | null; doneAt: string | null; cancelled: boolean }
@@ -60,7 +62,10 @@ export function MisTareas() {
   const [params] = useSearchParams()
   const [who, setWho] = useState<string>('')
   const [brand, setBrand] = useState('')
-  const [tab, setTab] = useState<Tab>(params.get('ver') === 'terminadas' ? 'terminadas' : 'pendientes')
+  const [tab, setTab] = useState<Tab>(params.get('ver') === 'terminadas' ? 'terminadas' : params.get('ver') === 'repetitivas' ? 'repetitivas' : 'pendientes')
+  const [creatingRecurring, setCreatingRecurring] = useState(false)
+  const [recurringNotice, setRecurringNotice] = useState<string | null>(null)
+  const [recurringCount, setRecurringCount] = useState(0)
   // El correo de asignación enlaza aquí con ?abrir=<iniciativa>.
   const [openId, setOpenId] = useState<string | null>(params.get('abrir'))
   const [showOlder, setShowOlder] = useState(false)
@@ -71,6 +76,15 @@ export function MisTareas() {
   const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
 
   const personId = (isAdmin && who) || member?.id || ''
+  useEffect(() => {
+    if (!personId) return
+    supabase
+      .from('recurring_tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('assignee_id', personId)
+      .eq('active', true)
+      .then(({ count }) => setRecurringCount(count ?? 0))
+  }, [personId, tab, recurringNotice])
   const person = members.find((m) => m.id === personId)
   const isMe = personId === member?.id
   const today = todayISO()
@@ -195,6 +209,7 @@ export function MisTareas() {
         <div className="flex rounded-lg bg-stone-100 p-1 dark:bg-stone-900" role="tablist" aria-label="Qué ver">
           <TabButton active={tab === 'pendientes'} onClick={() => setTab('pendientes')} label="Pendientes" count={pending.length} />
           <TabButton active={tab === 'terminadas'} onClick={() => setTab('terminadas')} label="✓ Terminadas" count={done.length} flash={flash} />
+          <TabButton active={tab === 'repetitivas'} onClick={() => setTab('repetitivas')} label="🔁 Repetitivas" count={recurringCount} />
         </div>
         {myBrands.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
@@ -238,6 +253,25 @@ export function MisTareas() {
               </Group>
             )
           })}
+        </div>
+      )}
+
+      {tab === 'repetitivas' && (
+        <div className="space-y-4">
+          {creatingRecurring && (
+            <Card className="p-4">
+              <RecurringForm
+                onCancel={() => setCreatingRecurring(false)}
+                onSaved={(text) => {
+                  setCreatingRecurring(false)
+                  setRecurringNotice(text)
+                  reload()
+                }}
+              />
+            </Card>
+          )}
+          {recurringNotice && <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">✓ {recurringNotice}</div>}
+          <RecurringList personId={personId} onNew={() => setCreatingRecurring(true)} />
         </div>
       )}
 
@@ -312,7 +346,13 @@ function Group({ title, tone, count, children }: { title: string; tone: string; 
 
 function KindTag({ item, ctx }: { item: Item; ctx: BoardCtx }) {
   if (item.kind === 'iniciativa') {
-    return <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">Responsable</span>
+    return item.task.recurring_id ? (
+      <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-950 dark:text-violet-300" title="Tarea repetitiva">
+        🔁 Repetitiva
+      </span>
+    ) : (
+      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">Responsable</span>
+    )
   }
   return (
     <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-600 dark:bg-stone-800 dark:text-stone-300">

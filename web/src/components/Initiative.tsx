@@ -64,7 +64,10 @@ export function InitiativeCard({ task, ctx, onOpen, showBrand = true }: { task: 
           {showBrand && <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />}
           <AgencyChip agency={ctx.agencies?.find((a) => a.id === task.agency_id)} />
         </span>
-        {task.priority === 'P1' && <PriorityBadge priority="P1" />}
+        <span className="flex items-center gap-1">
+          {task.recurring_id && <span title="Tarea repetitiva" aria-label="Tarea repetitiva">🔁</span>}
+          {task.priority === 'P1' && <PriorityBadge priority="P1" />}
+        </span>
       </div>
       <div className={`mt-1 text-[13px] font-medium ${sticker?.category === 'cancelado' ? 'line-through' : ''}`}>{task.title}</div>
       {task.description && <div className="mt-0.5 line-clamp-2 text-stone-500 dark:text-stone-400">{task.description}</div>}

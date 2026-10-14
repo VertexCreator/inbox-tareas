@@ -177,6 +177,27 @@ iniciativas de otras personas (cada fila dice cuál es cuál).
 - Si trabajas con varias marcas, filtra con los botones de marca.
 - El gerente puede elegir a cualquier persona del equipo en el menú de arriba para ver sus tareas.
 
+### Tareas repetitivas 🔁
+
+Para lo que se hace siempre (un reporte semanal, revisar métricas cada día, un pago cada 15 días, el cierre de
+mes). Las puede programar **cualquier persona del equipo para sí misma**, y el gerente **para cualquiera**.
+
+1. **+ Nueva tarea → 🔁 Repetitiva**, o en **Mis tareas → 🔁 Repetitivas → Nueva tarea repetitiva**.
+2. Elige cada cuánto se repite:
+   - **Todos los días**, con la opción de solo días hábiles (lunes a viernes);
+   - **Cada semana**, en uno o varios días (por ejemplo, lunes y miércoles);
+   - **Cada 15 días**, desde la fecha de inicio;
+   - **Cada mes**, el mismo día del mes de la fecha de inicio. Si es 31, en los meses más cortos cae el último día.
+3. Opcional: fecha final, plazo (vence el mismo día o unos días después), prioridad, marcas y subtareas (una por línea).
+   El recuadro azul muestra las próximas fechas antes de guardar.
+
+El día que toca, la tarea **se crea sola**: aparece en **Mis tareas → Pendientes** (y en el Tablero y Hoy) con 🔁
+y la fecha en el nombre ("Reporte semanal · 14/10"). Se termina como cualquier otra. Si un día no se hizo, la
+siguiente igual se crea; no se acumulan repeticiones atrasadas.
+
+En **Mis tareas → 🔁 Repetitivas** ves cada una con su regla y la próxima fecha, y puedes **Editar**,
+**⏸ Pausar / ▶ Reanudar** o **Borrar** (las tareas ya creadas se quedan).
+
 ### Mi correo (equipo)
 
 Cada persona del equipo puede conectar **su propio Gmail** en la pestaña **Mi correo**. Solo esa persona ve su

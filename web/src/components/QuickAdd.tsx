@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { RecurringForm } from './Recurring'
 import { BrandPicker } from './Brands'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
@@ -7,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import type { ListRow, Priority } from '../lib/types'
 import { btn, btnPrimary, input } from './ui'
 
-type Mode = 'iniciativa' | 'pendiente'
+type Mode = 'iniciativa' | 'pendiente' | 'repetitiva'
 interface SubDraft {
   title: string
   assignee_id: string
@@ -217,13 +218,13 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
             </div>
           </div>
         ) : (
-          <form onSubmit={submit} className="space-y-4" noValidate>
-            {isAdmin && (
-              <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-4">
+              <div className={`grid gap-2 ${isAdmin ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'}`}>
                 {(
                   [
-                    ['iniciativa', 'Iniciativa directa', 'Va al tablero ya asignada, con sus subtareas.'],
-                    ['pendiente', 'Pendiente para planificar', 'Va a una lista; el agente propone tarea, subtareas y personas.'],
+                    ...(isAdmin ? ([['iniciativa', 'Iniciativa directa', 'Va al tablero ya asignada, con sus subtareas.']] as const) : []),
+                    ['pendiente', 'Pendiente para planificar', isAdmin ? 'Va a una lista; el agente propone tarea, subtareas y personas.' : 'Va a una lista para que el gerente la reparta.'],
+                    ['repetitiva', '🔁 Repetitiva', 'Se crea sola cada día, semana, 15 días o mes.'],
                   ] as const
                 ).map(([value, label, desc]) => (
                   <button
@@ -239,7 +240,14 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
                   </button>
                 ))}
               </div>
-            )}
+
+            {mode === 'repetitiva' ? (
+              <RecurringForm
+                onCancel={onClose}
+                onSaved={(text) => setDone({ text, to: '/mis-tareas?ver=repetitivas', label: 'Ver mis repetitivas' })}
+              />
+            ) : (
+          <form onSubmit={submit} className="space-y-4" noValidate>
 
             <div className="space-y-2">
               <input
@@ -427,6 +435,8 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
               </button>
             </div>
           </form>
+            )}
+          </div>
         )}
       </div>
     </div>

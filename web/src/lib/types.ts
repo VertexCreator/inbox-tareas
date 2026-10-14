@@ -72,6 +72,8 @@ export interface Task {
   observation: string | null
   observation_at: string | null
   observation_by: string | null
+  recurring_id: string | null
+  recurrence_date: string | null
   created_at: string
   updated_at: string
 }
