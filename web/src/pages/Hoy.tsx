@@ -271,7 +271,7 @@ function HoyGerente() {
           </section>
 
           <section id="decidir" className="scroll-mt-20">
-            <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/listas">Ir a Listas</Link>}>
+            <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/iniciativas">Ir a Iniciativas</Link>}>
               Repartos por decidir
             </SectionTitle>
             <div className="space-y-2">
@@ -287,7 +287,7 @@ function HoyGerente() {
                       <span className="text-indigo-600 dark:text-indigo-400">✦</span>
                       <span className="min-w-0 flex-1 truncate">{p.title}</span>
                       <Tag tone="accent">Plan recomendado</Tag>
-                      <Link className={btn} to="/listas">
+                      <Link className={btn} to={`/iniciativas?plan=${p.id}`}>
                         Revisar
                       </Link>
                     </div>
@@ -447,9 +447,9 @@ function EmailRow({
         <button
           className={`${btn} px-2 py-0.5 text-xs ${created ? 'text-emerald-700 dark:text-emerald-400' : ''}`}
           onClick={onPending}
-          title={created ? 'Este correo ya tiene pendiente; puedes crear otro' : 'Crear y asignar desde este correo'}
+          title={created ? 'Este correo ya tiene tarea; puedes crear otra' : 'Crear y asignar una tarea desde este correo'}
         >
-          {created ? '✓ Con pendiente' : 'Crear pendiente'}
+          {created ? '✓ Con tarea' : 'Crear tarea'}
         </button>
         {url && (
           <a className={`${btn} px-2 py-0.5 text-xs`} href={url} target="_blank" rel="noreferrer">
@@ -556,7 +556,7 @@ function BrandProgress({ brands, tasks, stickers }: { brands: Brand[]; tasks: Ta
   if (brands.length === 0) return null
   return (
     <Card className="p-4">
-      <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/tablero">Ver tablero</Link>}>Avance por marca</SectionTitle>
+      <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/iniciativas">Ver iniciativas</Link>}>Avance por marca</SectionTitle>
       <div className="space-y-2.5">
         {brands.map((b) => {
           const mine = tasks.filter((t) => hasBrand(t, b.id))
@@ -718,7 +718,7 @@ function HoyMiembro() {
         <div className="space-y-4">
           {entries.length === 0 && (
             <Card>
-              <Empty>No tienes nada pendiente. Puedes proponer ideas en Listas.</Empty>
+              <Empty>No tienes nada pendiente. Puedes proponer ideas en Iniciativas → Por planificar.</Empty>
             </Card>
           )}
           {buckets.map(

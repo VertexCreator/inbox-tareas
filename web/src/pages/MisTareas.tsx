@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { supabase } from '../lib/supabase'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { supabase, uniqueChannel } from '../lib/supabase'
 import { RecurringForm, RecurringList } from '../components/Recurring'
 import { useUndo } from '../lib/undo'
 import { useSearchParams } from 'react-router-dom'
@@ -12,12 +12,12 @@ import { EmailModal } from '../components/TaskEmail'
 import { useAuth } from '../lib/auth'
 import { memberName, shortDate, todayISO, updateSubtask, updateTask, useBoard } from '../lib/data'
 import { useForwards } from '../lib/forwards'
-import type { Sticker, Subtask, Task } from '../lib/types'
+import type { ListItem, Sticker, Subtask, Task } from '../lib/types'
 
 // Todo lo que le toca a una persona, en dos listas: lo pendiente (por urgencia) y lo que ya terminó.
 // Cuenta: las iniciativas de las que es responsable y sus subtareas en iniciativas de otros.
 
-type Tab = 'pendientes' | 'terminadas' | 'repetitivas'
+type Tab = 'pendientes' | 'terminadas' | 'repetitivas' | 'propuestas'
 
 type Item =
   | { kind: 'iniciativa'; id: string; task: Task; due: string | null; doneAt: string | null; cancelled: boolean }
@@ -62,10 +62,11 @@ export function MisTareas() {
   const [params] = useSearchParams()
   const [who, setWho] = useState<string>('')
   const [brand, setBrand] = useState('')
-  const [tab, setTab] = useState<Tab>(params.get('ver') === 'terminadas' ? 'terminadas' : params.get('ver') === 'repetitivas' ? 'repetitivas' : 'pendientes')
+  const [tab, setTab] = useState<Tab>(params.get('ver') === 'terminadas' ? 'terminadas' : params.get('ver') === 'repetitivas' ? 'repetitivas' : params.get('ver') === 'propuestas' ? 'propuestas' : 'pendientes')
   const [creatingRecurring, setCreatingRecurring] = useState(false)
   const [recurringNotice, setRecurringNotice] = useState<string | null>(null)
   const [recurringCount, setRecurringCount] = useState(0)
+  const [proposedCount, setProposedCount] = useState(0)
   // El correo de asignación enlaza aquí con ?abrir=<iniciativa>.
   const [openId, setOpenId] = useState<string | null>(params.get('abrir'))
   const [showOlder, setShowOlder] = useState(false)
@@ -84,6 +85,12 @@ export function MisTareas() {
       .eq('assignee_id', personId)
       .eq('active', true)
       .then(({ count }) => setRecurringCount(count ?? 0))
+    supabase
+      .from('list_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('created_by', personId)
+      .in('status', ['sin_planificar', 'planificando'])
+      .then(({ count }) => setProposedCount(count ?? 0))
   }, [personId, tab, recurringNotice])
   const person = members.find((m) => m.id === personId)
   const isMe = personId === member?.id
@@ -210,6 +217,7 @@ export function MisTareas() {
           <TabButton active={tab === 'pendientes'} onClick={() => setTab('pendientes')} label="Pendientes" count={pending.length} />
           <TabButton active={tab === 'terminadas'} onClick={() => setTab('terminadas')} label="✓ Terminadas" count={done.length} flash={flash} />
           <TabButton active={tab === 'repetitivas'} onClick={() => setTab('repetitivas')} label="🔁 Repetitivas" count={recurringCount} />
+          <TabButton active={tab === 'propuestas'} onClick={() => setTab('propuestas')} label="📝 Lo que propuse" count={proposedCount} />
         </div>
         {myBrands.length > 1 && (
           <div className="flex flex-wrap gap-1.5">
@@ -255,6 +263,8 @@ export function MisTareas() {
           })}
         </div>
       )}
+
+      {tab === 'propuestas' && <Proposed personId={personId} isMe={isMe} ctx={ctx} onOpen={(id) => setOpenId(id)} />}
 
       {tab === 'repetitivas' && (
         <div className="space-y-4">
@@ -525,6 +535,91 @@ function DoneRow({ item: i, ctx, canAct, onReopen, onOpen }: { item: Item; ctx: 
           </button>
         )}
       </div>
+    </div>
+  )
+}
+
+// Lo que la persona anotó en "Por planificar" y en qué quedó.
+function Proposed({ personId, isMe, ctx, onOpen }: { personId: string; isMe: boolean; ctx: BoardCtx; onOpen: (taskId: string) => void }) {
+  const { tasks } = useBoard()
+  const [items, setItems] = useState<ListItem[]>([])
+  const [lists, setLists] = useState<{ id: string; name: string }[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const load = useCallback(async () => {
+    const [i, l] = await Promise.all([
+      supabase.from('list_items').select('*').eq('created_by', personId).order('created_at', { ascending: false }).limit(100),
+      supabase.from('lists').select('id, name'),
+    ])
+    setItems((i.data ?? []) as ListItem[])
+    setLists((l.data ?? []) as { id: string; name: string }[])
+  }, [personId])
+  useEffect(() => {
+    load()
+    const channel = supabase
+      .channel(uniqueChannel('propuestas'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'list_items' }, () => load())
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [load])
+  const remove = async (id: string) => {
+    const { error } = await supabase.from('list_items').delete().eq('id', id)
+    if (error) setError(error.message)
+    load()
+  }
+  if (!items.length) {
+    return (
+      <Card className="p-8 text-center text-sm text-stone-500 dark:text-stone-400">
+        {isMe ? 'Aquí ves lo que anotas en Por planificar y en qué queda.' : 'No ha propuesto nada todavía.'} Se agrega desde <b>+ Nueva tarea</b> o desde la columna Por planificar en Iniciativas.
+      </Card>
+    )
+  }
+  return (
+    <div className="space-y-2">
+      {error && <div className="text-sm text-red-600">{error}</div>}
+      <Card className="divide-y divide-stone-200 dark:divide-stone-800">
+        {items.map((it) => {
+          const t = tasks.find((x) => x.id === it.task_id)
+          const stage = t ? ctx.stickers.find((s) => s.id === t.sticker_id) : undefined
+          const owner = t ? memberName(ctx.members, t.assignee_id ?? t.suggested_assignee_id) : null
+          const status =
+            it.status === 'planificado' && t
+              ? { icon: '✓', text: `Ya es iniciativa${owner ? ` · responsable ${owner}` : ''}`, cls: 'text-emerald-700 dark:text-emerald-300' }
+              : it.status === 'planificando'
+                ? { icon: '✦', text: 'El plan está listo; el gerente lo revisa', cls: 'text-indigo-700 dark:text-indigo-300' }
+                : it.status === 'descartado'
+                  ? { icon: '–', text: 'Descartado', cls: 'text-stone-400' }
+                  : { icon: '⏳', text: it.auto_plan ? 'Esperando: el agente le arma un plan' : 'Esperando que el gerente lo reparta', cls: 'text-amber-700 dark:text-amber-300' }
+          return (
+            <div key={it.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
+              <span className={`mt-0.5 w-5 text-center ${status.cls}`} aria-hidden="true">
+                {status.icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className={`font-medium ${it.status === 'descartado' ? 'text-stone-400 line-through' : ''}`}>{it.title}</div>
+                <div className={`text-xs ${status.cls}`}>
+                  {status.text}
+                  {stage && <span className="text-stone-500"> · etapa {stage.name}</span>}
+                </div>
+                <div className="text-[11px] text-stone-400">
+                  {lists.find((l) => l.id === it.list_id)?.name} · {shortDate(it.created_at.slice(0, 10))}
+                </div>
+              </div>
+              {t && (
+                <button className={detailBtn} onClick={() => onOpen(t.id)}>
+                  Ver detalle →
+                </button>
+              )}
+              {isMe && it.status === 'sin_planificar' && (
+                <button className={`${btn} px-2.5 py-1 text-xs text-red-600`} onClick={() => remove(it.id)}>
+                  Borrar
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </Card>
     </div>
   )
 }

@@ -45,7 +45,7 @@ interface Props {
   prefill?: { title?: string; description?: string; brand_ids?: string[]; priority?: Priority; due_date?: string | null }
 }
 
-// Ventana de "Crear pendiente": todo precargado desde el correo, para asignar de una vez o dejarlo planificado.
+// Ventana de "Crear tarea": todo precargado desde el correo, para asignar de una vez o dejarlo planificado.
 export function EmailTaskModal({ email: e, members, brands, stickers, existing, onClose, onCreated, prefill }: Props) {
   const navigate = useNavigate()
   const { isAdmin } = useAuth()
@@ -159,16 +159,16 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
     if (splitting) {
       return setDone(
         mode === 'asignar'
-          ? { text: `Se crearon ${groups.length} iniciativas, una por marca, asignadas a ${name ?? 'su responsable'}. Puedes cambiar el responsable de cada una en el tablero.`, to: '/tablero', label: 'Ver en el tablero' }
-          : { text: `Se crearon ${groups.length} pendientes, uno por marca, con su recomendación.`, to: `/listas?lista=${r.list_id}`, label: 'Revisar en Listas' },
+          ? { text: `Se crearon ${groups.length} iniciativas, una por marca, asignadas a ${name ?? 'su responsable'}. Puedes cambiar el responsable de cada una en Iniciativas.`, to: '/iniciativas', label: 'Ver en Iniciativas' }
+          : { text: `Quedaron ${groups.length} por planificar, una por marca, con su recomendación.`, to: '/iniciativas', label: 'Ver en Iniciativas' },
       )
     }
     setDone(
       mode === 'asignar'
-        ? { text: `Iniciativa creada y asignada a ${name ?? 'su responsable'}${subs.filter((s) => s.include).length ? ` con ${subs.filter((s) => s.include).length} subtareas` : ''}.`, to: '/tablero', label: 'Ver en el tablero' }
+        ? { text: `Iniciativa creada y asignada a ${name ?? 'su responsable'}${subs.filter((s) => s.include).length ? ` con ${subs.filter((s) => s.include).length} subtareas` : ''}.`, to: '/iniciativas', label: 'Ver en Iniciativas' }
         : isAdmin
-          ? { text: 'Pendiente creado con su recomendación lista para revisar.', to: `/listas?lista=${r.list_id}&plan=${r.list_item_id}`, label: 'Revisar el plan' }
-          : { text: 'Pendiente enviado al gerente para que lo reparta.', to: `/listas?lista=${r.list_id}`, label: 'Ver en Listas' },
+          ? { text: 'Quedó por planificar, con su recomendación lista para revisar.', to: `/iniciativas?plan=${r.list_item_id}`, label: 'Revisar el plan' }
+          : { text: 'Quedó por planificar: el gerente lo reparte.', to: '/iniciativas', label: 'Ver en Iniciativas' },
     )
   }
 
@@ -217,7 +217,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
           <form onSubmit={submit} className="space-y-4" noValidate>
             {existing.length > 0 && (
               <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-                Este correo ya tiene {existing.length === 1 ? 'un pendiente' : `${existing.length} pendientes`}:{' '}
+                Este correo ya tiene {existing.length === 1 ? 'una tarea' : `${existing.length} tareas`}:{' '}
                 {existing.map((x) => `"${x.title}"`).join(', ')}. Si sigues, se crea otro.
               </div>
             )}
@@ -226,7 +226,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
               {(
                 [
                   ['asignar', 'Asignar ahora', 'Va al tablero con responsable y subtareas.'],
-                  ['planificar', isAdmin ? 'Planificar después' : 'Que lo planifique el gerente', isAdmin ? 'Queda en Listas con la recomendación lista para revisar.' : 'Queda en Listas para que el gerente lo reparta.'],
+                  ['planificar', isAdmin ? 'Planificar después' : 'Que lo planifique el gerente', isAdmin ? 'Queda en Por planificar con la recomendación lista para revisar.' : 'Queda en Por planificar para que el gerente lo reparta.'],
                 ] as const
               ).map(([value, label, desc]) => (
                 <button
@@ -267,7 +267,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
             <div className="space-y-1.5">
               <BrandPicker value={brandIds} onChange={setBrandIds} brands={brands} />
               {e.suggested_brand && (
-                <div className="text-xs text-violet-700 dark:text-violet-300">✦ El correo también sugiere la marca "{e.suggested_brand}" (créala en Listas o en el Tablero).</div>
+                <div className="text-xs text-violet-700 dark:text-violet-300">✦ El correo también sugiere la marca "{e.suggested_brand}" (créala en Iniciativas).</div>
               )}
               {brandIds.length > 1 && (
                 <div className="flex flex-wrap gap-1.5 text-xs" role="radiogroup" aria-label="Varias marcas">
@@ -414,7 +414,7 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
                 Cancelar
               </button>
               <button type="submit" className={btnPrimary} disabled={busy}>
-                {busy ? 'Guardando…' : splitting ? `Crear ${brandIds.length} (una por marca)` : mode === 'asignar' ? 'Crear y asignar' : 'Crear pendiente'}
+                {busy ? 'Guardando…' : splitting ? `Crear ${brandIds.length} (una por marca)` : mode === 'asignar' ? 'Crear y asignar' : 'Dejar por planificar'}
               </button>
             </div>
           </form>

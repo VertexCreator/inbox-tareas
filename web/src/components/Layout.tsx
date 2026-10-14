@@ -22,9 +22,8 @@ export function Layout() {
   const location = useLocation()
   const links = [
     { to: '/', label: 'Hoy' },
-    { to: '/listas', label: 'Listas' },
-    { to: '/tablero', label: 'Tablero' },
     { to: '/mis-tareas', label: 'Mis tareas' },
+    { to: '/iniciativas', label: 'Iniciativas' },
     ...(isAdmin ? [] : [{ to: '/mi-correo', label: 'Mi correo' }]),
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
@@ -60,7 +59,7 @@ export function Layout() {
             <button
               className="inline-flex h-8 items-center gap-1 rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white hover:bg-indigo-700 active:scale-95"
               onClick={() => setAdding(true)}
-              title="Agregar una tarea o pendiente a mano"
+              title="Agregar una tarea a mano"
             >
               + Nueva tarea
             </button>

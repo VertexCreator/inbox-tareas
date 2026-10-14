@@ -310,9 +310,9 @@ function EmailCard({
         <button
           className={`rounded px-1.5 py-0.5 text-[11px] hover:bg-stone-100 dark:hover:bg-stone-800 ${created ? 'text-emerald-700 dark:text-emerald-400' : 'text-stone-600 dark:text-stone-300'}`}
           onClick={onPending}
-          title={created ? 'Este correo ya tiene pendiente; puedes crear otro' : 'Crear y asignar desde este correo'}
+          title={created ? 'Este correo ya tiene tarea; puedes crear otra' : 'Crear y asignar una tarea desde este correo'}
         >
-          {created ? '✓ Con pendiente' : 'Crear pendiente'}
+          {created ? '✓ Con tarea' : 'Crear tarea'}
         </button>
         {extra}
         <button className="ml-auto rounded px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950" onClick={onDone}>
@@ -330,8 +330,8 @@ function Extras({ d }: { d: SummaryData | null }) {
   return (
     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
       {(d.pendientes?.length ?? 0) > 0 && (
-        <Link to="/listas" className="rounded-lg bg-indigo-50 p-2.5 text-xs text-indigo-900 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-100 dark:hover:bg-indigo-900">
-          <div className="mb-1 font-medium">📋 {d.pendientes!.length} pendientes nuevos →</div>
+        <Link to="/iniciativas" className="rounded-lg bg-indigo-50 p-2.5 text-xs text-indigo-900 hover:bg-indigo-100 dark:bg-indigo-950 dark:text-indigo-100 dark:hover:bg-indigo-900">
+          <div className="mb-1 font-medium">📝 {d.pendientes!.length} nuevas por planificar →</div>
           {d.pendientes!.slice(0, 3).map((p, i) => (
             <div key={i} className="truncate opacity-80">
               {p.brand ? `${p.brand} · ` : ''}
@@ -342,7 +342,7 @@ function Extras({ d }: { d: SummaryData | null }) {
         </Link>
       )}
       {(d.iniciativas?.length ?? 0) > 0 && (
-        <Link to="/tablero" className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900">
+        <Link to="/iniciativas" className="rounded-lg bg-amber-50 p-2.5 text-xs text-amber-900 hover:bg-amber-100 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900">
           <div className="mb-1 font-medium">⏱ {d.iniciativas!.length} iniciativas vencen →</div>
           {d.iniciativas!.slice(0, 3).map((x, i) => (
             <div key={i} className={`truncate ${x.overdue ? 'font-medium text-red-700 dark:text-red-300' : 'opacity-80'}`}>

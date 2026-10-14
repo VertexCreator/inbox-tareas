@@ -116,7 +116,7 @@ function PrioritiesConfigEditor() {
         </div>
         <div className="grid gap-2 border-t border-stone-200 py-3 md:grid-cols-[120px_minmax(0,1fr)] dark:border-stone-800">
           <label htmlFor="prio-create" className="text-xs text-stone-500 dark:text-stone-400">
-            Cuándo crear pendientes
+            Cuándo dejar algo por planificar
           </label>
           <textarea id="prio-create" className={`${input} w-full`} rows={2} value={c.create_items} onChange={(e) => set({ create_items: e.target.value })} />
         </div>
@@ -379,7 +379,7 @@ function TemplatesEditor({ skills }: { skills: string[] }) {
           </div>
           <div className="space-y-1">
             <label htmlFor="tpl-keywords" className="text-xs text-stone-500 dark:text-stone-400">
-              Palabras que la activan (si el pendiente las menciona, el agente propone esta plantilla)
+              Palabras que la activan (si la tarea las menciona, el agente propone esta plantilla)
             </label>
             <TagInput id="tpl-keywords" values={draft.keywords} onChange={(v) => setDraft({ ...draft, keywords: v })} placeholder="instagram, campaña…" normalize={(v) => v.toLowerCase()} />
           </div>
@@ -553,7 +553,7 @@ function BrandsStickers() {
         <SectionTitle>Marcas</SectionTitle>
         <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
           Los alias ayudan al agente a reconocer la marca en los correos: dominios del cliente (@peros.cl), nombres de productos o
-          como la mencionan. Si el agente detecta una marca que no existe, la verás sugerida en Listas para crearla con un clic.
+          como la mencionan. Si el agente detecta una marca que no existe, la verás sugerida en Iniciativas para crearla con un clic.
         </p>
         {brands.length === 0 && <p className="text-sm text-stone-500">Crea marcas desde el Tablero con "+ Marca".</p>}
         <div className="divide-y divide-stone-200 dark:divide-stone-800">

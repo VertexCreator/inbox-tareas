@@ -3,7 +3,7 @@
 Teamflow es la primera herramienta de la línea **Flow**, las herramientas corporativas de Dimassi.
 
 Este dashboard reúne en un solo lugar las iniciativas de marketing del equipo, organizadas por marca, con su
-etapa, responsable, fechas y subtareas. Los pendientes nacen en las listas (o desde los correos del gerente)
+etapa, responsable, fechas y subtareas. Lo nuevo entra en Por planificar (a mano o desde los correos del gerente)
 y se convierten en iniciativas con ayuda del agente.
 
 ## 1. Entrar
@@ -26,7 +26,7 @@ Casi todo lo que haces se puede deshacer:
 - cambiar responsable, fecha, marcas, agencia, nombre, descripción u observación;
 - borrar una subtarea;
 - marcar un correo como listo o cambiarle la prioridad;
-- descartar un pendiente.
+- descartar algo por planificar.
 
 Hay tres formas de hacerlo:
 
@@ -41,7 +41,7 @@ Hay tres formas de hacerlo:
 
 Usa el botón **+ Nueva tarea** de la barra de arriba, desde cualquier página, para lo que no llegó por correo.
 
-- **Equipo:** agrega un **pendiente** a una lista (por defecto, *Tareas manuales*) con descripción, marca, fecha y
+- **Equipo:** agrega algo **Por planificar** (por defecto, a la lista *Tareas manuales*) con descripción, marca, fecha y
   prioridad. Con **Pedir plan al agente** marcado, el Planificador arma en la próxima media hora la tarea, las
   subtareas y las personas recomendadas, y la gerente lo confirma. En la lista verás "Plan en camino ✦".
 - **Gerente:** tiene dos opciones.
@@ -75,7 +75,24 @@ en la actividad, y el resumen del día avisa si vence.
 | **Observación** | Un aviso visible en la tarjeta: "Falta el logo en vectores del cliente". |
 | **Pendiente** | Una idea o pedido anotado en una lista, que todavía no es iniciativa. |
 
-## 3. Tablero
+## 3. Iniciativas
+
+Todo el trabajo del equipo en una sola página, de la idea a terminada:
+
+```
+📝 Por planificar  →  Por revisar  →  En diseño  →  …  →  Listo
+(sin responsable)     (iniciativas, en las etapas que define el gerente)
+```
+
+- **📝 Por planificar** (primera columna, la ve todo el equipo): ideas y pedidos que todavía no tienen responsable.
+  Llegan desde los correos del gerente, desde **+ Nueva tarea → Por planificar** o escribiendo en el campo
+  **+ Agregar** al pie de la columna. El gerente los **planifica** y pasan a las etapas.
+- **Las etapas:** las iniciativas, ya con responsable.
+- **Vistas** (arriba a la derecha): **Tablero**, **Lista**, **Por marca**, **Por persona**, **Por prioridad**,
+  **Por agencia** y **Calendario**. Valen para todo, lo por planificar y las iniciativas.
+- **Filtro Lista:** cada proyecto o campaña puede tener su lista ("Desde correos", "Tareas manuales", "Campaña
+  Navidad"…). Elige una para ver solo lo suyo. El gerente crea listas con **+ Lista**.
+- **Mostrar terminadas / descartadas** y **Ocultar columnas vacías**, debajo de los filtros.
 
 Arriba hay una pestaña por marca:
 
@@ -138,7 +155,7 @@ Los cambios se guardan solos y aparecen en las pantallas de todos en pocos segun
 - guarda el texto en la iniciativa, en la sección **✉ Correo original**: remitente, fecha, para, CC, la lista de
   adjuntos y el texto ordenado (los enlaces se abren con un clic y el historial del hilo queda plegado).
 
-**Indicador del correo** (en las tarjetas del Tablero, Mis tareas y Listas, y en el detalle):
+**Indicador del correo** (en las tarjetas de Iniciativas y Mis tareas, y en el detalle):
 
 | Indicador | Qué significa |
 |---|---|
@@ -174,6 +191,8 @@ iniciativas de otras personas (cada fila dice cuál es cuál).
 - **✓ Terminadas:** todo lo que terminaste, agrupado por Hoy, Ayer, Esta semana y Antes, con la hora. **Reabrir** la
   devuelve a Pendientes.
 - Al terminar algo aparece un aviso abajo con **Deshacer** y **Ver terminadas**.
+- **🔁 Repetitivas:** las tareas que se repiten (ver más abajo).
+- **📝 Lo que propuse:** lo que anotaste en Por planificar y en qué quedó.
 - Si trabajas con varias marcas, filtra con los botones de marca.
 - El gerente puede elegir a cualquier persona del equipo en el menú de arriba para ver sus tareas.
 
@@ -191,7 +210,7 @@ mes). Las puede programar **cualquier persona del equipo para sí misma**, y el 
 3. Opcional: fecha final, plazo (vence el mismo día o unos días después), prioridad, marcas y subtareas (una por línea).
    El recuadro azul muestra las próximas fechas antes de guardar.
 
-El día que toca, la tarea **se crea sola**: aparece en **Mis tareas → Pendientes** (y en el Tablero y Hoy) con 🔁
+El día que toca, la tarea **se crea sola**: aparece en **Mis tareas → Pendientes** (y en Iniciativas y Hoy) con 🔁
 y la fecha en el nombre ("Reporte semanal · 14/10"). Se termina como cualquier otra. Si un día no se hizo, la
 siguiente igual se crea; no se acumulan repeticiones atrasadas.
 
@@ -222,8 +241,8 @@ correo; el gerente no.
 
 Si mueves un correo a otra prioridad, la base **aprende ese remitente** y los próximos llegan así.
 
-**Qué puedes hacer con cada correo:** **Abrir ↗** en tu Gmail, **Crear pendiente** y **✓ Listo**. Con
-**Crear pendiente** puedes **crear la iniciativa y asignarla** a cualquier persona autorizada, o dejarla para
+**Qué puedes hacer con cada correo:** **Abrir ↗** en tu Gmail, **Crear tarea** y **✓ Listo**. Con
+**Crear tarea** puedes **crear la iniciativa y asignarla** a cualquier persona autorizada, o dejarla para
 que el gerente la reparta. Si la asignas a otra persona, **tu script le reenvía el correo** ("Asignación
 TeamFlow - …", con todo el texto y los adjuntos), igual que cuando asigna el gerente.
 
@@ -231,62 +250,42 @@ TeamFlow - …", con todo el texto y los adjuntos), igual que cuando asigna el g
 su próxima pasada (cada 30 minutos, lunes a viernes de 8:00 a 18:30). Te devuelve:
 
 - un resumen, la prioridad sugerida (**Aplicar**) y las marcas;
-- un pendiente propuesto (**Crear pendiente con esto**);
+- una tarea propuesta (**Crear tarea con esto**);
 - con **+ respuesta**, un texto de respuesta para copiar en Gmail.
 
 Ese correo pasa por la sesión de Claude del gerente; el resto de tu bandeja nunca llega a Claude. Hay un límite
 diario por persona.
 
-## 6. Listas y planificación
+## 6. Por planificar y planificación
 
-**Todos** pueden anotar pendientes:
+**Todos** pueden anotar algo por planificar:
 
-1. Entra a **Listas** y elige una lista (cada proyecto o campaña tiene la suya).
-2. En la fila de abajo escribe el pendiente.
-3. Si quieres, agrega detalles, marca, agencia, fecha y prioridad. Pulsa **Agregar**.
+1. **+ Nueva tarea → 📝 Por planificar**, o en **Iniciativas**, el campo **+ Agregar** al pie de la columna Por planificar.
+2. Si quieres, agrega detalles, marca, agencia, fecha y prioridad.
 
-**Todas las listas** junta los pendientes de todas las listas en una sola vista.
-
-**Vistas** (arriba a la derecha; se recuerda la última que usaste):
-
-| Vista | Qué muestra |
-|---|---|
-| **Lista** | La tabla de siempre: pendiente, estado, responsable, fecha límite y acciones. |
-| **Kanban** | Una columna por estado: Sin planificar, Recomendación lista, En tareas, Terminado (y Descartado si lo muestras). |
-| **Por marca** | Un grupo por marca con su avance y sus vencidos. Los multimarca aparecen en cada una de sus marcas. |
-| **Por persona** | Un grupo por responsable, y "Sin responsable" para lo que falta asignar. |
-| **Por prioridad** | P1, P2, P3 y sin prioridad. |
-| **Por agencia** | Un grupo por agencia, y "Sin agencia". |
-| **Calendario** | El mes con cada pendiente en su fecha límite (rojo si venció, tachado si se terminó). Clic en un día para ver sus pendientes; abajo, los que no tienen fecha. |
-
-Los grupos se pliegan con un clic en su nombre. En todas las vistas el gerente puede **Planificar** o **Revisar
-plan** desde la tarjeta.
-
-**Filtros:** búsqueda, **marca** (una o varias, o "Sin marca"), **agencia**, **persona** (responsable o con
-subtareas, o "Sin asignar") y **prioridad**. Se combinan entre sí y valen para todas las vistas.
-
-Mientras no esté planificado, puedes borrar tu propio pendiente. La lista **Desde correos** la llena el agente
-con lo que detecta en el inbox del gerente.
+Mientras no esté planificado, puedes borrar lo tuyo. En **Mis tareas → 📝 Lo que propuse** ves todo lo que anotaste y
+en qué quedó: esperando al gerente, con plan listo, ya es iniciativa (con su responsable y etapa) o descartado.
+La lista **Desde correos** la llena el agente con lo que detecta en el inbox del gerente.
 
 **Marca sugerida:** el agente deduce la marca de cada correo por el dominio del remitente, los productos o la
 firma.
 
 - Si la marca ya existe, la asigna sola.
-- Si no existe, verás **✦ ¿Marca: X?** en el pendiente. El gerente pulsa **Crear y asignar** (o **Asignar**, si
-  ya existe con otro nombre) y la marca queda puesta en ese pendiente y en todos los que la sugerían.
+- Si no existe, verás **✦ ¿Marca: X?** en la tarjeta. El gerente pulsa **Crear y asignar** (o **Asignar**, si
+  ya existe con otro nombre) y la marca queda puesta ahí y en todo lo que la sugería.
 - La **×** descarta la sugerencia.
 
 **Correos con varias marcas:** el script de Gmail detecta todas las marcas que nombra un correo y le pasa al
 agente el párrafo de cada una. El agente decide:
 
-- **Una iniciativa multimarca:** si es el mismo trabajo para varias marcas, crea **un** pendiente con todas ellas.
-- **Iniciativas distintas por marca:** si el correo pide cosas distintas a cada marca, las **separa**: un
-  pendiente por marca, cada uno con lo suyo.
+- **Una iniciativa multimarca:** si es el mismo trabajo para varias marcas, deja **una** tarea por planificar con todas ellas.
+- **Iniciativas distintas por marca:** si el correo pide cosas distintas a cada marca, las **separa**: una
+  por marca, cada una con lo suyo.
 
 Para cambiar las marcas (solo el gerente), en el detalle de la iniciativa o del plan pulsa **+ Marca** para sumar
 otra, **×** para quitarla, o haz clic en una marca para volverla la principal.
 
-**El gerente** convierte los pendientes en iniciativas:
+**El gerente** convierte lo por planificar en iniciativas (botón **Planificar →** en la tarjeta):
 
 1. **Planificar:** el dashboard propone al instante una iniciativa con subtareas. Usa la plantilla que mejor
    calza: campaña en redes, lanzamiento, evento, newsletter, nota de prensa, blog o tarea simple. Cada subtarea
@@ -312,13 +311,13 @@ Algunos detalles de la recomendación:
     - Los cuadros se arman con tus correos pendientes, no con un texto: si marcas uno como **✓ Listo**,
       desaparece al instante.
     - Cada tarjeta dice qué te piden, quién, la marca, la fecha ("hoy", "mañana", "venció…"), si te mencionan o
-      estás en copia, y tiene **Abrir**, **Crear pendiente** y **✓ Listo**.
-    - **Crear pendiente** abre una ventana con todo precargado desde el correo (título, descripción, marca,
+      estás en copia, y tiene **Abrir**, **Crear tarea** y **✓ Listo**.
+    - **Crear tarea** abre una ventana con todo precargado desde el correo (título, descripción, marca,
       prioridad y fecha). Elige **Asignar ahora**: propone responsable y subtareas con persona y fecha según la
-      plantilla, y la iniciativa va directo al tablero. O elige **Planificar después**: queda en Listas con la
+      plantilla, y la iniciativa va directo al tablero. O elige **Planificar después**: queda en Por planificar con la
       recomendación lista. Si el correo tiene varias marcas, elige **Una iniciativa multimarca** o **Separar: una
-      por marca** (crea una por cada marca con el mismo plan). Por defecto el correo se marca como atendido. Si ya tiene pendiente, el botón dice
-      **✓ Con pendiente** y la ventana te avisa antes de crear otro.
+      por marca** (crea una por cada marca con el mismo plan). Por defecto el correo se marca como atendido. Si ya tiene tarea, el botón dice
+      **✓ Con tarea** y la ventana te avisa antes de crear otro.
     - El contador grande dice cuántos hay y "+N nuevos" cuántos llegaron desde la revisión anterior. **Ver los N**
       despliega el resto.
     - Filtra por marca con los botones de arriba, o activa **Solo donde me mencionan** para los días con muchos
@@ -326,10 +325,10 @@ Algunos detalles de la recomendación:
     - **Cambia la prioridad** arrastrando la tarjeta a otro cuadro, o con los botones **→P1 / →P2 / →P3** de
       la esquina. Queda **📌 fijada por ti**: el agente no la cambia y aprende de tus correcciones para los
       correos parecidos.
-    - Debajo: pendientes nuevos, iniciativas que vencen, carga del equipo, basura filtrada y correos sospechosos;
+    - Debajo: lo nuevo por planificar, iniciativas que vencen, carga del equipo, basura filtrada y correos sospechosos;
   - "Necesita tu atención" (responder hoy, repartos por decidir, vencidas, personas saturadas), donde cada
     tarjeta lleva a su sección;
-  - bandeja de correos por prioridad: **Crear pendiente** manda el correo a "Desde correos" y **Listo** lo
+  - bandeja de correos por prioridad: **Crear tarea** manda el correo a "Desde correos" y **Listo** lo
     marca como respondido;
   - **@ Te mencionan:** en hilos con muchos destinatarios, marca los correos donde te nombraron con @. El
     resumen del agente se basa en el párrafo donde te piden algo. **En copia** y **Por lista** indican que no
@@ -367,14 +366,14 @@ Algunos detalles de la recomendación:
 
 | Acción | Equipo | Responsable | Gerente |
 |---|:-:|:-:|:-:|
-| Ver tablero, listas y actividad | ✓ | ✓ | ✓ |
-| Agregar pendientes | ✓ | ✓ | ✓ |
+| Ver Iniciativas (incluido Por planificar) y la actividad | ✓ | ✓ | ✓ |
+| Agregar algo Por planificar | ✓ | ✓ | ✓ |
 | Marcar sus propias subtareas | ✓ | ✓ | ✓ |
 | Cambiar etapa (también arrastrando) y observación | | ✓ | ✓ |
 | Crear y editar subtareas de la iniciativa | | ✓ | ✓ |
 | Ver su propio correo y crear y asignar iniciativas desde él (Mi correo) | ✓ | ✓ | ✓ |
 | Pedir análisis al agente | si el gerente lo habilita | si el gerente lo habilita | |
-| Crear iniciativas, marcas, etapas y agencias; planificar pendientes | | | ✓ |
+| Crear iniciativas, marcas, etapas y agencias; planificar | | | ✓ |
 | Cambiar marca, responsable, fechas y descripción | | | ✓ |
 | Ver la bandeja del gerente y configurar el agente | | | ✓ |
 
@@ -383,7 +382,7 @@ Algunos detalles de la recomendación:
 - **No puedo cambiar la etapa de una iniciativa.** Solo el responsable y el gerente pueden hacerlo. Si te
   toca a ti, pídele al gerente que te asigne como responsable.
 - **No aparezco como responsable.** El gerente tiene que marcarte "Puede ser responsable" en Equipo.
-- **La etapa que necesito no existe.** El gerente la crea con **+ Nueva etapa** al final del tablero.
+- **La etapa que necesito no existe.** El gerente la crea con **+ Nueva etapa** al final del tablero de Iniciativas.
 - **Un correo de una agencia no quedó con su agencia.** Revisa que su dominio esté en Configuración → Marcas,
   etapas y agencias.
 - **La recomendación dice "Nadie del equipo tiene…".** Falta esa habilidad en los perfiles. Agrégala en Equipo

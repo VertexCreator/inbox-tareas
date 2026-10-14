@@ -3,7 +3,7 @@ import type { Agency, Brand, Member, Priority } from '../lib/types'
 import { chipClass, dotClass } from './colors'
 import { input } from './ui'
 
-// Filtros compartidos por Listas y Tablero. "none" = sin marca / sin agencia / sin asignar.
+// Filtros compartidos por Iniciativas y Mis tareas. "none" = sin marca / sin agencia / sin asignar.
 export interface Filters {
   q: string
   brands: string[]

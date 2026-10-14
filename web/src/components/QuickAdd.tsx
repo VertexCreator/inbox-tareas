@@ -96,7 +96,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return setError(mode === 'iniciativa' ? 'Escribe el nombre de la iniciativa.' : 'Escribe el pendiente.')
+    if (!title.trim()) return setError(mode === 'iniciativa' ? 'Escribe el nombre de la iniciativa.' : 'Escribe qué hay que hacer.')
     setBusy(true)
     setError(null)
 
@@ -122,8 +122,8 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
         text:
           (owner ? 'Iniciativa creada y asignada.' : 'Iniciativa creada. El agente sugirió un responsable: apruébalo en Hoy o en el detalle.') +
           (searchEmail ? ' El script buscará el correo relacionado en los próximos 5 minutos y lo vinculará.' : ''),
-        to: '/tablero',
-        label: 'Ver en el tablero',
+        to: '/iniciativas',
+        label: 'Ver en Iniciativas',
       })
     }
 
@@ -161,18 +161,18 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
       setBusy(false)
       if (planError) return setError(planError.message)
       return setDone({
-        text: 'Pendiente creado con su recomendación. Claude la afina en la próxima media hora; puedes revisarla ya.',
-        to: `/listas?lista=${listId}&plan=${data.id}`,
+        text: 'Quedó por planificar, con su recomendación. Claude la afina en la próxima media hora; puedes revisarla ya.',
+        to: `/iniciativas?plan=${data.id}`,
         label: 'Revisar el plan',
       })
     }
     setBusy(false)
     setDone({
       text: autoPlan
-        ? 'Pendiente agregado. El agente le armará un plan en la próxima media hora y la gerente lo confirmará.'
-        : 'Pendiente agregado a la lista.',
-      to: `/listas?lista=${listId}`,
-      label: 'Ver la lista',
+        ? 'Agregado a Por planificar. El agente le armará un plan en la próxima media hora y la gerente lo confirmará.'
+        : 'Agregado a Por planificar.',
+      to: `/iniciativas?lista=${listId}`,
+      label: 'Ver en Iniciativas',
     })
   }
 
@@ -223,7 +223,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
                 {(
                   [
                     ...(isAdmin ? ([['iniciativa', 'Iniciativa directa', 'Va al tablero ya asignada, con sus subtareas.']] as const) : []),
-                    ['pendiente', 'Pendiente para planificar', isAdmin ? 'Va a una lista; el agente propone tarea, subtareas y personas.' : 'Va a una lista para que el gerente la reparta.'],
+                    ['pendiente', '📝 Por planificar', isAdmin ? 'Va a una lista; el agente propone tarea, subtareas y personas.' : 'Va a una lista para que el gerente la reparta.'],
                     ['repetitiva', '🔁 Repetitiva', 'Se crea sola cada día, semana, 15 días o mes.'],
                   ] as const
                 ).map(([value, label, desc]) => (
@@ -431,7 +431,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
                 Cancelar
               </button>
               <button type="submit" className={btnPrimary} disabled={busy}>
-                {busy ? 'Guardando…' : mode === 'iniciativa' ? 'Crear iniciativa' : 'Agregar pendiente'}
+                {busy ? 'Guardando…' : mode === 'iniciativa' ? 'Crear iniciativa' : 'Agregar a Por planificar'}
               </button>
             </div>
           </form>

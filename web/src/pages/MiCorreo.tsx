@@ -129,7 +129,7 @@ export function MiCorreo() {
         <div>
           <h1 className="text-xl font-medium">Mi correo</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            Tu bandeja de Gmail ordenada por prioridad. Solo tú la ves. Convierte un correo en tarea con <b>Crear pendiente</b>.
+            Tu bandeja de Gmail ordenada por prioridad. Solo tú la ves. Convierte un correo en tarea con <b>Crear tarea</b>.
           </p>
         </div>
         {connected && (
@@ -364,11 +364,11 @@ function AnalysisModal({
         )}
         {r.pendiente && email && (
           <div className="rounded-lg border border-stone-200 p-3 text-sm dark:border-stone-800">
-            <div className="text-xs text-stone-500">Pendiente propuesto</div>
+            <div className="text-xs text-stone-500">Tarea propuesta</div>
             <div className="font-medium">{r.pendiente.title}</div>
             {r.pendiente.notes && <div className="text-xs text-stone-600 dark:text-stone-300">{r.pendiente.notes}</div>}
             <button className={`${btnPrimary} mt-2`} onClick={() => onCreate(email)}>
-              Crear pendiente con esto
+              Crear tarea con esto
             </button>
           </div>
         )}

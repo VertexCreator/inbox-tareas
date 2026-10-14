@@ -4,18 +4,18 @@ import { Layout } from './components/Layout'
 import { UndoProvider } from './lib/undo'
 import { ChangePassword, Login, NoAccess } from './pages/Login'
 import { Hoy } from './pages/Hoy'
-import { Tablero } from './pages/Tablero'
 import { Equipo } from './pages/Equipo'
 import { Configuracion } from './pages/Configuracion'
-import { Listas } from './pages/Listas'
 import { MisTareas } from './pages/MisTareas'
+import { Iniciativas } from './pages/Iniciativas'
 import { MiCorreo } from './pages/MiCorreo'
 import { Ayuda } from './pages/Ayuda'
 
-// La pestaña se llamaba Tickets: los enlaces viejos (por ejemplo, en correos ya enviados) siguen funcionando.
-function ToMisTareas() {
+// Pestañas que cambiaron de nombre (Tickets → Mis tareas; Listas y Tablero → Iniciativas): los enlaces viejos
+// (por ejemplo, en correos ya enviados) siguen funcionando.
+function Redirect({ to }: { to: string }) {
   const { search } = useLocation()
-  return <Navigate to={`/mis-tareas${search}`} replace />
+  return <Navigate to={`${to}${search}`} replace />
 }
 
 function Gate() {
@@ -33,11 +33,12 @@ function Gate() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Hoy />} />
-          <Route path="listas" element={<Listas />} />
-          <Route path="tablero" element={<Tablero />} />
+          <Route path="iniciativas" element={<Iniciativas />} />
+          <Route path="listas" element={<Redirect to="/iniciativas" />} />
+          <Route path="tablero" element={<Redirect to="/iniciativas" />} />
           <Route path="mis-tareas" element={<MisTareas />} />
           <Route path="mi-correo" element={<MiCorreo />} />
-          <Route path="tickets" element={<ToMisTareas />} />
+          <Route path="tickets" element={<Redirect to="/mis-tareas" />} />
           <Route path="ayuda" element={<Ayuda />} />
           <Route path="equipo" element={<Equipo />} />
           {isAdmin && <Route path="configuracion" element={<Configuracion />} />}
