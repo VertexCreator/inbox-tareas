@@ -124,5 +124,5 @@ select public.submit_email_analysis(ID, $json$ {
 - Si no puedes analizarlo (texto vacío o ilegible): `select public.submit_email_analysis(ID, '{"error": "motivo"}'::jsonb);`
 
 ### 5. Aviso
-Termina con una línea: "Afiné N planes: título 1, título 2… Revísalos en Listas." y, si hubo análisis,
+Termina con una línea: "Afiné N planes: título 1, título 2… Revísalos en Iniciativas → Por planificar." y, si hubo análisis,
 "Analicé M correos del equipo." (sin asuntos ni nombres: son privados).
