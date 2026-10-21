@@ -176,6 +176,16 @@ persona nueva. Si te la asignas a ti, no se reenvía. El gerente puede pulsar **
 Configuración → Script de Gmail → **Reenviar el correo al asignar**. Gmail acepta hasta 25 MB por correo: si los
 adjuntos no caben, el correo dice cuáles quedaron fuera.
 
+**⧉ Duplicar para otra marca:** en el detalle de cualquier iniciativa, **⧉ Duplicar** crea una copia idéntica en la
+que solo cambia la marca. Lo puede hacer cualquier persona del equipo.
+
+- Eliges una o varias marcas; se crea una copia por cada una. La ventana muestra cómo quedará cada nombre.
+- Se copia igual: título y descripción (con el nombre de la marca cambiado donde aparezca), responsable, prioridad,
+  esfuerzo, agencia, fechas y todas las subtareas con sus personas y fechas.
+- No se copia el avance: la copia empieza en la primera etapa, con las subtareas sin marcar, sin observación ni
+  correo vinculado.
+- Te equivocaste: **↶ Deshacer** borra las copias (en los 30 minutos siguientes y mientras sean tuyas).
+
 ## 5. Mis tareas
 
 Todo lo que te toca, en un solo lugar: las iniciativas de las que eres **responsable** y tus **subtareas** en

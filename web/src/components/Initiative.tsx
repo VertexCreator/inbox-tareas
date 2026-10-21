@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { DuplicateModal } from './Duplicate'
 import { useUndo } from '../lib/undo'
 import { ForwardBadge } from './ForwardStatus'
 import type { ForwardRow, ForwardSchedule } from '../lib/forwards'
@@ -133,6 +134,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
       setError(e instanceof Error ? e.message : 'No se pudo guardar.')
     }
   }
+  const [duplicating, setDuplicating] = useState(false)
   // Cada cambio queda con "↶ Deshacer": se guarda el valor anterior de lo que se cambió.
   const { track } = useUndo()
   const change = (patch: Parameters<typeof updateTask>[1], label: string) =>
@@ -162,9 +164,14 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
           ) : (
             <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />
           )}
-          <button className={btn} onClick={onClose} aria-label="Cerrar">
-            Cerrar
-          </button>
+          <span className="flex shrink-0 gap-1.5">
+            <button className={btn} onClick={() => setDuplicating(true)} title="Crear una copia idéntica para otra marca">
+              ⧉ Duplicar
+            </button>
+            <button className={btn} onClick={onClose} aria-label="Cerrar">
+              Cerrar
+            </button>
+          </span>
         </div>
 
         {isAdmin ? (
@@ -288,6 +295,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
 
         {isAdmin && <LinkedEmail task={task} onChanged={onChanged} />}
         <TaskEmail task={task} members={ctx.members} schedule={ctx.forwardSchedule} />
+        {duplicating && <DuplicateModal task={task} brands={ctx.brands} subtaskCount={subs.length} onClose={() => setDuplicating(false)} onDone={onChanged} />}
 
         <section className="mt-4 rounded-lg border border-amber-200 bg-amber-50/60 p-3 dark:border-amber-900 dark:bg-amber-950/30">
           <div className="mb-1 flex items-center justify-between text-xs text-amber-800 dark:text-amber-200">
