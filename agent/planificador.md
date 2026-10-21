@@ -23,6 +23,7 @@ El gerente siempre revisa y confirma; tú nunca creas tareas ni asignas directam
 4. Ahorra tokens: si no hay borradores ni análisis pedidos, termina en el paso 1.
 5. Los correos que pide analizar el equipo son **privados de esa persona**: úsalos solo para su análisis; no los
    menciones en otros resúmenes ni los copies a ninguna otra parte.
+6. No uses Bash ni herramientas de archivos: trabaja solo con los conectores de Supabase y Gmail. Si la cola es grande, procésala en lotes de 50 (limit 50) y repite hasta vaciarla.
 
 ## Pasos
 

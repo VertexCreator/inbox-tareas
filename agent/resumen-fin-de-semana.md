@@ -28,6 +28,7 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
 4. Pasa los datos como JSON con *dollar quoting* para que ningún texto del correo rompa la consulta:
    `select public.ingest_email($json$ { ... } $json$::jsonb);`
    Si un texto contiene `$json$`, quítalo antes.
+5. No uses Bash ni herramientas de archivos: trabaja solo con los conectores de Supabase y Gmail. Si la cola es grande, procésala en lotes de 50 (limit 50) y repite hasta vaciarla.
 
 ## Pasos
 
@@ -62,7 +63,7 @@ Los correos ya llegan pre-procesados: un Google Apps Script (`apps-script/Code.g
 select id, gmail_message_id, gmail_thread_id, from_name, from_email, subject, received_at,
        snippet, attachments, is_vip, is_automatic,
        to_count, cc_count, addressed, mentioned, mention_excerpts, brands_mentioned, brand_excerpts
-from public.email_queue where status = 'pendiente' order by received_at limit 200;
+from public.email_queue where status = 'pendiente' order by received_at limit 50;
 ```
 Normalmente trae lo recibido desde el viernes a las 18:00.
 - `snippet` es el cuerpo ya limpio (sin firmas ni texto citado) y recortado. Úsalo para decidir.
@@ -82,7 +83,7 @@ Normalmente trae lo recibido desde el viernes a las 18:00.
     Úsalo para decidir si es **una iniciativa multimarca** o **iniciativas distintas por marca** (ver paso 3).
 - `is_automatic`: notificación automática (noreply, pestaña Notificaciones, listas). Normalmente es
   `ninguna`, salvo que pida una acción real (un banco, un pago, un plazo).
-- Si hay 200 filas, procesa estas y vuelve a consultar hasta vaciar la cola.
+- Si hay 50 filas, procesa estas y vuelve a consultar hasta vaciar la cola.
 - **Solo abre el correo completo en Gmail** (con `gmail_message_id`) si el extracto y `mention_excerpts` no
   alcanzan para decidir la prioridad, o para escribir un borrador (paso 4). No abras correos para nada más.
 - Si `last_ingest_at` tiene más de 2 horas, el script de Gmail dejó de correr: dilo al inicio del
@@ -175,7 +176,7 @@ Escribe un resumen en español para leerlo el lunes por la mañana. Respeta qué
 - Empieza con "Fin de semana:".
 - Agrupa por prioridad (P1, P2, P3) y destaca qué atender primero el lunes, con remitente y motivo.
 - Pendientes nuevos y a quién recomienda el plan
-  (`select i.title, r.proposal->>'reason' from public.list_items i join public.plan_recommendations r on r.list_item_id = i.id where i.created_at > now() - interval '12 hours' and r.status in ('borrador','afinada')`).
+  (`select i.title, r.proposal->>'reason' from public.list_items i join public.plan_recommendations r on r.list_item_id = i.id where i.created_at > now() - interval '3 days' and r.status in ('borrador','afinada')`).
 - Cuánta basura filtró el script (`select count(*) from public.emails where owner_member_id is null and priority = 'ninguna'
   and created_at > now() - interval '1 day'`; en fin de semana, desde el viernes).
 - Cualquier correo sospechoso.
