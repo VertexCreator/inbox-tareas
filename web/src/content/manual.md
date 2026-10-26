@@ -212,7 +212,8 @@ iniciativas de otras personas (cada fila dice cuál es cuál).
 ### Tareas repetitivas 🔁
 
 Para lo que se hace siempre (un reporte semanal, revisar métricas cada día, un pago cada 15 días, el cierre de
-mes). Las puede programar **cualquier persona del equipo para sí misma**, y el gerente **para cualquiera**.
+mes). Cualquier persona del equipo las puede programar **para sí**; para otras personas, el gerente y los cargos con
+el permiso **Tareas repetitivas para otros** (solo a quienes pueden asignar).
 
 1. **+ Nueva tarea → 🔁 Repetitiva**, o en **Mis tareas → 🔁 Repetitivas → Nueva tarea repetitiva**.
 2. Elige cada cuánto se repite:
@@ -298,7 +299,8 @@ agente el párrafo de cada una. El agente decide:
 Para cambiar las marcas (solo el gerente), en el detalle de la iniciativa o del plan pulsa **+ Marca** para sumar
 otra, **×** para quitarla, o haz clic en una marca para volverla la principal.
 
-**El gerente** tiene dos formas de convertir lo por planificar en iniciativa:
+**El gerente** (y los cargos con el permiso **Repartir lo que está por planificar**, como Coordinador) tiene dos
+formas de convertir lo por planificar en iniciativa:
 
 - **Asignar a… ▾** (en la tarjeta y en **Hoy → Por asignar**): eliges a la persona y queda como iniciativa al instante,
   sin subtareas. La pestaña **Iniciativas** muestra un número con cuántas cosas esperan que las asignes.
@@ -360,18 +362,42 @@ Algunos detalles de la recomendación:
 
 ## 8. Equipo
 
-- Muestra a cada persona con sus habilidades, su carga y lo que tiene abierto.
+- Muestra a cada persona con su cargo, sus habilidades, su carga y lo que tiene abierto.
 - El gerente agrega personas, les da acceso y define:
+  - **Cargo** (Coordinador, Especialista, Diseñador o los que crees) y un **título** opcional que ve el equipo (por
+    ejemplo, "Coordinadora de contenido").
   - **Habilidades:** cada clic sube el nivel (básico → intermedio → avanzado → sin nivel).
   - **Capacidad:** 10 = tiempo completo; 5 = medio tiempo.
-  - **Puede ser responsable de iniciativas:** solo quienes lo tienen marcado aparecen como responsables.
   - **Disponible:** desmárcalo durante vacaciones para que el agente no le recomiende trabajo.
-  - **Puede asignar tareas a:** las personas a las que esta persona puede asignarle iniciativas y subtareas, incluido el
-    gerente si lo marcas. Siempre puede asignarse a sí misma. Al empezar, cada miembro puede asignar a sus compañeros
-    pero no a los gerentes.
-  - **Puede pedir análisis al agente:** habilita **✦ Pedir análisis** en su Mi correo. Usa tu plan de Claude; el límite
-    diario por persona se ajusta en el recuadro **Análisis del agente para el equipo**, arriba de la lista.
+  - **Permisos de la persona:** por defecto, los de su cargo. En cada permiso puedes dejar **Como el cargo** o darle
+    **Sí** o **No** solo a esa persona (queda resaltado). **Dejar todo como el cargo** borra esos ajustes.
+  - **Puede asignar tareas:** como su cargo, a todo el equipo, a sus compañeros (no a gerentes), solo autoasignarse o
+    **solo a las personas que elijas**. Siempre puede asignarse a sí misma o a sí mismo.
 - Cada persona muestra si conectó su Gmail (**✉ Gmail conectado**).
+- El límite diario de **Pedir análisis al agente** se ajusta en el recuadro **Análisis del agente para el equipo**.
+
+### Cargos y permisos
+
+En **Equipo → Cargos y permisos → Ver y editar** hay una tabla con un cargo por columna y un permiso por fila. Cada
+cambio se guarda al instante y vale para todas las personas con ese cargo, salvo lo que hayas ajustado a alguien.
+Con **+ Nuevo cargo** creas otro (empieza solo con lo básico); con ✎ lo renombras y con ✕ lo eliminas (quienes lo
+tenían quedan sin cargo, con permisos básicos).
+
+| Permiso | Qué permite | Coordinador | Especialista | Diseñador |
+|---|---|:-:|:-:|:-:|
+| Asignar tareas | A quién puede asignar | a todos | a compañeros | solo a sí |
+| Ser responsable de iniciativas | Aparecer como responsable principal | ✓ | ✓ | ✓ |
+| Repartir lo que está por planificar | Asignar, planificar y descartar en Por planificar | ✓ | | |
+| Editar iniciativas | Nombre, descripción, fechas, marcas, agencia y responsable | ✓ | | |
+| Mover iniciativas de otros | Cambiar la etapa de cualquiera (las suyas siempre) | ✓ | | |
+| Eliminar iniciativas de otros | Las que creó siempre las puede eliminar | | | |
+| Tareas repetitivas para otros | Programarlas para otras personas | ✓ | | |
+| Duplicar para otra marca | ⧉ Duplicar en el detalle | ✓ | ✓ | ✓ |
+| Mi correo | Conectar su Gmail | ✓ | ✓ | ✓ |
+| Pedir análisis al agente | Usa tu plan de Claude | | | |
+
+Esos son los valores con los que empiezan; cámbialos cuando quieras. Los **administradores pueden todo**, sin
+importar su cargo: para que el cargo aplique a alguien, desmárcale **Administrador** en Editar.
 
 ## 9. Configuración (solo gerente)
 
@@ -386,27 +412,32 @@ Algunos detalles de la recomendación:
 
 ## 10. Quién puede hacer qué
 
+Lo que dice "según cargo" depende del cargo de la persona y de sus ajustes (ver **Cargos y permisos**).
+
 | Acción | Equipo | Responsable | Gerente |
 |---|:-:|:-:|:-:|
 | Ver Iniciativas (incluido Por planificar) y la actividad | ✓ | ✓ | ✓ |
 | Agregar algo Por planificar | ✓ | ✓ | ✓ |
 | Marcar sus propias subtareas | ✓ | ✓ | ✓ |
-| Cambiar etapa (también arrastrando) y observación | | ✓ | ✓ |
-| Crear y editar subtareas de la iniciativa | | ✓ | ✓ |
-| Ver su propio correo y crear iniciativas desde él (Mi correo) | ✓ | ✓ | ✓ |
+| Cambiar etapa (también arrastrando) y observación | según cargo | ✓ | ✓ |
+| Crear y editar subtareas de la iniciativa | según cargo | ✓ | ✓ |
 | Crear iniciativas y asignarlas a sí mismo | ✓ | ✓ | ✓ |
-| Asignar iniciativas a otras personas | a quienes el gerente autorice | a quienes el gerente autorice | a cualquiera |
-| Eliminar una iniciativa | las que creó | las que creó | ✓ |
-| Pedir análisis al agente | si el gerente lo habilita | si el gerente lo habilita | |
-| Crear iniciativas, marcas, etapas y agencias; planificar | | | ✓ |
-| Cambiar marca, responsable, fechas y descripción | | | ✓ |
+| Asignar iniciativas a otras personas | según cargo | según cargo | a cualquiera |
+| Repartir y planificar lo que está Por planificar | según cargo | según cargo | ✓ |
+| Cambiar marca, responsable, fechas y descripción | según cargo | según cargo | ✓ |
+| Eliminar una iniciativa | las que creó, o según cargo | las que creó, o según cargo | ✓ |
+| Duplicar, Mi correo, Pedir análisis al agente | según cargo | según cargo | ✓ |
+| Crear marcas, etapas, agencias y cargos | | | ✓ |
 | Ver la bandeja del gerente y configurar el agente | | | ✓ |
 
 ## 11. Preguntas frecuentes
 
-- **No puedo cambiar la etapa de una iniciativa.** Solo el responsable y el gerente pueden hacerlo. Si te
-  toca a ti, pídele al gerente que te asigne como responsable.
-- **No aparezco como responsable.** El gerente tiene que marcarte "Puede ser responsable" en Equipo.
+- **No puedo cambiar la etapa de una iniciativa.** Lo hacen el responsable, el gerente y los cargos con **Mover
+  iniciativas de otros**. Si te toca a ti, pídele al gerente que te asigne como responsable.
+- **No aparezco como responsable.** Tu cargo (o tu ajuste en Equipo) tiene que incluir **Ser responsable de
+  iniciativas**.
+- **No veo un botón que otra persona sí ve** (Asignar a…, Duplicar, Mi correo…). Depende del cargo: el gerente lo
+  activa en **Equipo → Cargos y permisos** o solo para ti en **Editar**.
 - **La etapa que necesito no existe.** El gerente la crea con **+ Nueva etapa** al final del tablero de Iniciativas.
 - **Un correo de una agencia no quedó con su agencia.** Revisa que su dominio esté en Configuración → Marcas,
   etapas y agencias.

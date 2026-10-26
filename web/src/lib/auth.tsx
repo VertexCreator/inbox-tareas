@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase, workspaceDomain } from './supabase'
+import type { Perms } from './permissions'
+import { supabase, uniqueChannel, workspaceDomain } from './supabase'
 
 interface CurrentMember {
   id: string
@@ -13,6 +14,9 @@ interface AuthState {
   session: Session | null
   member: CurrentMember | null
   isAdmin: boolean
+  // Lo que permite el cargo de quien usa el dashboard (el gerente puede todo).
+  perms: Perms | null
+  can: (key: keyof Omit<Perms, 'admin' | 'role' | 'asignar_a'>) => boolean
   loading: boolean
   // true cuando el admin le dio una contraseña temporal y aún no la cambia.
   mustChangePassword: boolean
@@ -28,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [member, setMember] = useState<CurrentMember | null>(null)
   const [loading, setLoading] = useState(true)
+  const [perms, setPerms] = useState<Perms | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -57,6 +62,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       })
   }, [session?.user.email])
+
+  // Si el gerente cambia el cargo o los permisos, se aplica sin recargar la página.
+  useEffect(() => {
+    if (!member) {
+      setPerms(null)
+      return
+    }
+    const load = () =>
+      supabase.rpc('my_permissions').then(({ data }) => {
+        if (data) setPerms(data as Perms)
+      })
+    load()
+    const channel = supabase
+      .channel(uniqueChannel('perms'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'roles' }, load)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'team_members', filter: `id=eq.${member.id}` }, load)
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [member])
 
   const signInWithPassword = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
@@ -96,6 +122,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         session,
         member,
         isAdmin: member?.is_admin ?? false,
+        perms,
+        can: (key) => !!member?.is_admin || perms?.[key] === true,
         loading,
         mustChangePassword: session?.user.user_metadata?.password_set === false,
         signInWithPassword,

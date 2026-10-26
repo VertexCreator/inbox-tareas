@@ -12,7 +12,7 @@ import { QuickAdd } from './QuickAdd'
 import { ErrorBoundary } from './ErrorBoundary'
 
 export function Layout() {
-  const { member, isAdmin, signOut } = useAuth()
+  const { member, isAdmin, perms, can, signOut } = useAuth()
   // Guarda la dirección del dashboard para el enlace "Ver en TeamFlow" de los correos de asignación.
   useEffect(() => {
     if (isAdmin && window.location.protocol === 'https:') supabase.rpc('remember_dashboard_url', { p_url: window.location.origin }).then(() => {})
@@ -20,10 +20,11 @@ export function Layout() {
   const [changingPassword, setChangingPassword] = useState(false)
   const [adding, setAdding] = useState(false)
   const location = useLocation()
-  // Contador para el gerente: lo que está por planificar y espera que lo asigne.
+  // Contador para quien reparte: lo que está por planificar y espera que lo asigne.
+  const canPlan = can('repartir')
   const [toAssign, setToAssign] = useState(0)
   useEffect(() => {
-    if (!isAdmin) return
+    if (!canPlan) return
     const count = () =>
       supabase
         .from('list_items')
@@ -39,12 +40,12 @@ export function Layout() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [isAdmin])
+  }, [canPlan])
   const links = [
     { to: '/', label: 'Hoy' },
     { to: '/mis-tareas', label: 'Mis tareas' },
-    { to: '/iniciativas', label: 'Iniciativas', badge: isAdmin ? toAssign : 0 },
-    ...(isAdmin ? [] : [{ to: '/mi-correo', label: 'Mi correo' }]),
+    { to: '/iniciativas', label: 'Iniciativas', badge: canPlan ? toAssign : 0 },
+    ...(!isAdmin && can('mi_correo') ? [{ to: '/mi-correo', label: 'Mi correo' }] : []),
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
   ]
@@ -90,7 +91,7 @@ export function Layout() {
             </button>
             <span className="hidden sm:inline">
               {member?.name}
-              {isAdmin ? ' · admin' : ''}
+              {isAdmin ? ' · admin' : perms?.role ? ` · ${perms.role}` : ''}
             </span>
             <NavLink
               to="/ayuda"

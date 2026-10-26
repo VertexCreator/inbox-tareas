@@ -1,15 +1,16 @@
 import { useState } from 'react'
 import { memberOption } from '../lib/data'
+import { useAssignable } from '../lib/permissions'
 import { supabase } from '../lib/supabase'
 import type { ListItem, Member } from '../lib/types'
 import { useUndo } from '../lib/undo'
 
-// "Asignar a… ▾": el gerente convierte algo por planificar en iniciativa con un responsable, sin armar el plan.
+// "Asignar a… ▾": quien reparte (el gerente o un cargo con ese permiso) convierte algo por planificar en iniciativa con un responsable, sin armar el plan.
 export function QuickAssign({ item, members, onDone, compact = false }: { item: Pick<ListItem, 'id' | 'title' | 'status'>; members: Member[]; onDone: () => void; compact?: boolean }) {
   const { track } = useUndo()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const owners = members.filter((m) => m.active && m.can_own)
+  const { owners } = useAssignable(members)
 
   const assign = async (memberId: string) => {
     if (!memberId) return

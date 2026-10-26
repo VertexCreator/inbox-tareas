@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BrandPicker, brandIdsOf } from './Brands'
 import { memberName, memberOption, shortDate } from '../lib/data'
+import { useAssignable } from '../lib/permissions'
 import { supabase } from '../lib/supabase'
 import type { Brand, ListItem, Member, PlanRecommendation, PlanTemplate, Priority, Proposal, ProposalSubtask } from '../lib/types'
 import { Tag, btn, btnPrimary, input } from './ui'
@@ -25,8 +26,7 @@ export function PlanPanel({ item, brands, members, templates, skills, onClose, o
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const active = members.filter((m) => m.active)
-  const owners = active.filter((m) => m.can_own)
+  const { owners, people: active } = useAssignable(members)
 
   const load = useCallback(
     async (templateId?: string) => {

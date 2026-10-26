@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { useBoard } from '../lib/data'
+import { useRoles, type Role } from '../lib/permissions'
 import { supabase } from '../lib/supabase'
 import { LEVEL_LABEL, type Member } from '../lib/types'
+import { MemberPermissions, RolesManager } from '../components/Roles'
 import { Avatar, Card, LoadBar, SectionTitle, Tag, btn, btnPrimary, input } from '../components/ui'
 
 interface Draft {
@@ -12,11 +14,11 @@ interface Draft {
   capacity_points: number
   available: boolean
   is_admin: boolean
-  can_own: boolean
-  ai_analysis_allowed: boolean
+  role_id: string | null
+  job_title: string
 }
 
-const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false, can_own: false, ai_analysis_allowed: false }
+const EMPTY: Draft = { name: '', email: '', skill_levels: {}, capacity_points: 10, available: true, is_admin: false, role_id: null, job_title: '' }
 
 function useSkills() {
   const [skills, setSkills] = useState<string[]>([])
@@ -38,8 +40,9 @@ function toRow(d: Draft) {
     capacity_points: d.capacity_points,
     available: d.available,
     is_admin: d.is_admin,
-    can_own: d.can_own || d.is_admin,
-    ai_analysis_allowed: d.ai_analysis_allowed && !d.is_admin,
+    // Lo que puede hacer (ser responsable, pedir análisis…) sale del cargo; los ajustes se hacen en Permisos.
+    role_id: d.role_id,
+    job_title: d.job_title.trim() || null,
   }
 }
 
@@ -57,6 +60,7 @@ export function Equipo() {
   const [adding, setAdding] = useState(false)
   const [accessFor, setAccessFor] = useState<string | null>(null)
   const skills = useSkills()
+  const roles = useRoles()
 
   const [mailboxes, setMailboxes] = useState<Record<string, string | null>>({})
   useEffect(() => {
@@ -88,12 +92,14 @@ export function Equipo() {
       </div>
 
       {error && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
+      {isAdmin && <RolesManager roles={roles} members={members} />}
       {isAdmin && <AnalysisLimit allowed={members.filter((m) => m.active && m.ai_analysis_allowed).length} />}
 
       {adding && (
         <MemberForm
           skills={skills}
-          initial={EMPTY}
+          roles={roles}
+          initial={{ ...EMPTY, role_id: roles.find((r) => r.name === 'Especialista')?.id ?? null }}
           submitLabel="Agregar"
           onCancel={() => setAdding(false)}
           onSave={async (d) => {
@@ -113,7 +119,8 @@ export function Equipo() {
               <div className="p-3">
                 <MemberForm
                   skills={skills}
-                  initial={{ ...m, skill_levels: m.skill_levels ?? {} }}
+                  roles={roles}
+                  initial={{ ...m, skill_levels: m.skill_levels ?? {}, job_title: m.job_title ?? '' }}
                   submitLabel="Guardar"
                   canRemove={m.id !== member?.id}
                   onCancel={() => setEditing(null)}
@@ -132,12 +139,19 @@ export function Equipo() {
                     return null
                   }}
                 />
-                {!m.is_admin && <AssignPermissions member={m} members={members} />}
+                {m.is_admin ? (
+                  <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
+                    {m.name} es administrador: puede todo, sin importar su cargo. Para que su cargo aplique, desmarca Administrador.
+                  </p>
+                ) : (
+                  <MemberPermissions member={m} members={members} roles={roles} onChanged={reload} />
+                )}
               </div>
             ) : (
               <>
                 <MemberRow
                   m={m}
+                  role={roles.find((r) => r.id === m.role_id)}
                   mailbox={isAdmin && !m.is_admin ? (m.id in mailboxes ? (mailboxes[m.id] ? 'ok' : 'sin_envios') : 'no') : undefined}
                   doneCount={tasks.filter((t) => t.assignee_id === m.id && t.status === 'hecho').length}
                   onEdit={isAdmin ? () => setEditing(m.id) : undefined}
@@ -175,12 +189,14 @@ export function Equipo() {
 
 function MemberRow({
   m,
+  role,
   doneCount,
   onEdit,
   onAccess,
   mailbox,
 }: {
   m: Member
+  role?: Role
   doneCount: number
   mailbox?: 'ok' | 'sin_envios' | 'no'
   onEdit?: () => void
@@ -195,6 +211,9 @@ function MemberRow({
             {m.name} {m.is_admin && <span className="text-xs font-normal text-stone-400">· admin</span>}
             {m.can_own && !m.is_admin && <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400"> · responsable</span>}
           </div>
+          {(role || m.job_title) && (
+            <div className="truncate text-xs text-indigo-700 dark:text-indigo-300">{[m.job_title, role && role.name !== m.job_title ? role.name : null].filter(Boolean).join(' · ')}</div>
+          )}
           <div className="truncate text-xs text-stone-500 dark:text-stone-400">{m.email}</div>
         </div>
       </div>
@@ -244,6 +263,7 @@ function MemberRow({
 
 function MemberForm({
   skills,
+  roles,
   initial,
   submitLabel,
   onSave,
@@ -252,6 +272,7 @@ function MemberForm({
   canRemove = false,
 }: {
   skills: string[]
+  roles: Role[]
   initial: Draft
   submitLabel: string
   onSave: (d: Draft) => Promise<string | null>
@@ -280,6 +301,15 @@ function MemberForm({
       <div className="grid gap-2 md:grid-cols-2">
         <input className={input} placeholder="Nombre" value={d.name} onChange={(e) => set({ name: e.target.value })} aria-label="Nombre" />
         <input className={input} placeholder="nombre@tuempresa.com" value={d.email} onChange={(e) => set({ email: e.target.value })} aria-label="Correo de Google Workspace" />
+        <select className={input} value={d.role_id ?? ''} onChange={(e) => set({ role_id: e.target.value || null })} aria-label="Cargo">
+          <option value="">Sin cargo (permisos básicos)</option>
+          {roles.map((r) => (
+            <option key={r.id} value={r.id}>
+              Cargo: {r.name}
+            </option>
+          ))}
+        </select>
+        <input className={input} placeholder="Título que ve el equipo (opcional), ej. Coordinadora de contenido" value={d.job_title} onChange={(e) => set({ job_title: e.target.value })} aria-label="Título del puesto" />
         <label className="flex items-center gap-2 text-sm md:col-span-2">
           Capacidad (pts abiertos)
           <input
@@ -334,18 +364,8 @@ function MemberForm({
           Disponible para tareas nuevas
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={d.can_own || d.is_admin} disabled={d.is_admin} onChange={(e) => set({ can_own: e.target.checked })} />
-          Puede ser responsable de iniciativas
-        </label>
-        {!d.is_admin && (
-          <label className="flex items-center gap-2" title="El agente del gerente analiza los correos que esta persona le pida, con el plan de Claude del gerente">
-            <input type="checkbox" checked={d.ai_analysis_allowed} onChange={(e) => set({ ai_analysis_allowed: e.target.checked })} />
-            Puede pedir análisis al agente (usa tu plan de Claude)
-          </label>
-        )}
-        <label className="flex items-center gap-2">
           <input type="checkbox" checked={d.is_admin} onChange={(e) => set({ is_admin: e.target.checked })} />
-          Administrador (ve correos y corrige repartos)
+          Administrador (puede todo: ve los correos del gerente y corrige repartos)
         </label>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -483,7 +503,7 @@ function AnalysisLimit({ allowed }: { allowed: number }) {
     <Card className="flex flex-wrap items-center gap-3 p-3 text-sm">
       <span className="text-violet-600 dark:text-violet-300">✦</span>
       <span className="min-w-0 flex-1">
-        <b>Análisis del agente para el equipo:</b> {allowed === 0 ? 'nadie habilitado todavía (actívalo en Editar de cada persona).' : `${allowed} ${allowed === 1 ? 'persona habilitada' : 'personas habilitadas'}.`}{' '}
+        <b>Análisis del agente para el equipo:</b> {allowed === 0 ? 'nadie habilitado todavía (actívalo en Cargos y permisos o en Editar de cada persona).' : `${allowed} ${allowed === 1 ? 'persona habilitada' : 'personas habilitadas'}.`}{' '}
         <span className="text-stone-500 dark:text-stone-400">Usa tu plan de Claude; lo procesa el Planificador cada 30 minutos en horario laboral.</span>
       </span>
       <label className="flex items-center gap-1.5 text-xs">
@@ -496,55 +516,5 @@ function AnalysisLimit({ allowed }: { allowed: number }) {
       </button>
       {msg && <span className="text-xs text-stone-500">{msg}</span>}
     </Card>
-  )
-}
-
-// A quién le puede asignar tareas esta persona (el gerente lo decide). Siempre puede asignarse a sí misma.
-function AssignPermissions({ member, members }: { member: Member; members: Member[] }) {
-  const [targets, setTargets] = useState<string[] | null>(null)
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
-  useEffect(() => {
-    supabase
-      .from('assignment_permissions')
-      .select('target_id')
-      .eq('member_id', member.id)
-      .then(({ data }) => setTargets((data ?? []).map((x) => x.target_id as string)))
-  }, [member.id])
-  if (targets === null) return null
-  const others = members.filter((m) => m.active && m.id !== member.id)
-  const save = async (next: string[]) => {
-    setTargets(next)
-    const { error } = await supabase.rpc('set_assignment_permissions', { p_member: member.id, p_targets: next })
-    setMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Guardado.' })
-  }
-  const toggle = (id: string) => save(targets.includes(id) ? targets.filter((x) => x !== id) : [...targets, id])
-  return (
-    <div className="mt-3 space-y-2 rounded-lg border border-stone-200 p-3 dark:border-stone-800">
-      <div className="text-sm font-medium">{member.name} puede asignar tareas a:</div>
-      <p className="text-xs text-stone-500 dark:text-stone-400">
-        Al crear una iniciativa (en + Nueva tarea o desde su correo) solo verá a estas personas como responsables y para subtareas. Siempre puede asignarse a sí misma.
-      </p>
-      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
-        {others.map((o) => (
-          <label key={o.id} className="flex items-center gap-1.5">
-            <input type="checkbox" checked={targets.includes(o.id)} onChange={() => toggle(o.id)} />
-            {o.name}
-            {o.is_admin && <span className="text-xs text-indigo-600 dark:text-indigo-400">(gerente)</span>}
-          </label>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-3 text-xs">
-        <button className="text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => save(others.map((o) => o.id))}>
-          A todo el equipo
-        </button>
-        <button className="text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => save(others.filter((o) => !o.is_admin).map((o) => o.id))}>
-          A todos menos los gerentes
-        </button>
-        <button className="text-stone-500 hover:underline" onClick={() => save([])}>
-          Solo a sí misma
-        </button>
-        {msg && <span className={msg.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600'}>{msg.text}</span>}
-      </div>
-    </div>
   )
 }

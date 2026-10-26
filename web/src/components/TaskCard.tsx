@@ -28,7 +28,7 @@ interface Props {
 }
 
 export function TaskCard({ task, members, isAdmin, onChanged, compact = false, subtasks = [], stickers = [], onOpen, onOpenEmail }: Props) {
-  const { member } = useAuth()
+  const { member, can } = useAuth()
   const { track } = useUndo()
   const [correcting, setCorrecting] = useState(false)
   const [open, setOpen] = useState(false)
@@ -39,7 +39,7 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
   const assigneeId = task.assignee_id ?? task.suggested_assignee_id
   const assignee = memberName(members, assigneeId)
   const pending = task.needs_approval && !task.assignee_id
-  const canStage = isAdmin || (!!member && task.assignee_id === member.id)
+  const canStage = can('cambiar_etapas') || (!!member && task.assignee_id === member.id)
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -104,7 +104,7 @@ export function TaskCard({ task, members, isAdmin, onChanged, compact = false, s
         <DueDate
           value={task.due_date}
           overdue={isOverdue(task.due_date, task.status === 'hecho')}
-          editable={isAdmin}
+          editable={can('editar_iniciativas')}
           onSave={(v) => run(() => updateTask(task.id, { due_date: v }))}
         />
         {task.source === 'correo' && <Tag>desde correo</Tag>}

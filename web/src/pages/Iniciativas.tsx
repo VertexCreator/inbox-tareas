@@ -59,7 +59,7 @@ interface Row {
 }
 
 export function Iniciativas() {
-  const { isAdmin, member } = useAuth()
+  const { isAdmin, member, can } = useAuth()
   const { tasks, subtasks, members, brands, stickers, agencies, error, reload } = useBoard()
   const { track } = useUndo()
   const [params] = useSearchParams()
@@ -197,9 +197,11 @@ export function Iniciativas() {
     board: ctx,
     lists,
     isAdmin,
+    canPlan: can('repartir'),
+    canStage: can('cambiar_etapas'),
     memberId: member?.id ?? null,
     showList: listFilter === ALL,
-    onOpen: (r) => (r.task ? setOpenId(r.task.id) : isAdmin && r.item && setPlanning(r.item.id)),
+    onOpen: (r) => (r.task ? setOpenId(r.task.id) : can('repartir') && r.item && setPlanning(r.item.id)),
     onPlan: (id) => setPlanning(id),
     onDiscard: discard,
     onRemove: remove,
@@ -374,6 +376,9 @@ interface RowCtx {
   board: BoardCtx
   lists: ListRow[]
   isAdmin: boolean
+  // Según el cargo: repartir lo que está por planificar y mover iniciativas de otros.
+  canPlan: boolean
+  canStage: boolean
   memberId: string | null
   showList: boolean
   onOpen: (r: Row) => void
@@ -417,7 +422,7 @@ function Pipeline({
   const inits = rows.filter((r) => r.kind === 'iniciativa').map((r) => r.task!)
   const plan = rows.filter((r) => r.kind === 'plan')
   const stageOf = (t: Task) => moved[t.id] ?? t.sticker_id
-  const canMove = (t: Task) => isAdmin || (!!memberId && (t.assignee_id ?? t.suggested_assignee_id) === memberId)
+  const canMove = (t: Task) => rctx.canStage || (!!memberId && (t.assignee_id ?? t.suggested_assignee_id) === memberId)
 
   const drop = async (stageId: string) => {
     const t = inits.find((x) => x.id === dragId)
@@ -537,17 +542,17 @@ function QuickAddPlan({ listId, listName, onAdded }: { listId: string; listName:
 
 function PlanActions({ row: r, rctx, compact = false }: { row: Row; rctx: RowCtx; compact?: boolean }) {
   const item = r.item!
-  const mine = !rctx.isAdmin && item.created_by === rctx.memberId && item.status === 'sin_planificar'
+  const mine = !rctx.canPlan && item.created_by === rctx.memberId && item.status === 'sin_planificar'
   const small = 'text-[11px] font-medium hover:underline'
   return (
     <span className="flex flex-wrap items-center gap-2">
-      {rctx.isAdmin && item.status !== 'descartado' && <QuickAssign item={item} members={rctx.board.members} onDone={rctx.onAccepted} compact={compact} />}
-      {rctx.isAdmin && item.status !== 'descartado' && (
+      {rctx.canPlan && item.status !== 'descartado' && <QuickAssign item={item} members={rctx.board.members} onDone={rctx.onAccepted} compact={compact} />}
+      {rctx.canPlan && item.status !== 'descartado' && (
         <button className={compact ? `${small} text-indigo-600 dark:text-indigo-400` : item.status === 'planificando' ? btnPrimary : btnDetail} onClick={() => rctx.onPlan(item.id)}>
           {item.status === 'planificando' ? 'Revisar plan' : 'Planificar con subtareas →'}
         </button>
       )}
-      {rctx.isAdmin && item.status === 'sin_planificar' && (
+      {rctx.canPlan && item.status === 'sin_planificar' && (
         <button className={compact ? `${small} text-stone-500` : btn} onClick={() => rctx.onDiscard(item)}>
           Descartar
         </button>

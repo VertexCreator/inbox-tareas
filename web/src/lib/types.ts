@@ -19,6 +19,12 @@ export interface Member {
   open_subtasks: number
   can_own: boolean
   ai_analysis_allowed: boolean
+  role_id: string | null
+  job_title: string | null
+  // Ajustes de la persona sobre lo que dice su cargo.
+  perm_overrides: Record<string, boolean | string>
+  // true si el gerente le armó una lista de a quién puede asignar.
+  assign_custom: boolean
 }
 
 export interface Brand {

@@ -4,6 +4,7 @@ import { useUndo } from '../lib/undo'
 import { ForwardBadge } from './ForwardStatus'
 import type { ForwardRow, ForwardSchedule } from '../lib/forwards'
 import { TaskEmail } from './TaskEmail'
+import { useAssignable } from '../lib/permissions'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import {
@@ -102,10 +103,12 @@ export function InitiativeCard({ task, ctx, onOpen, showBrand = true }: { task: 
 
 // Panel lateral con todo el detalle. Cada campo se guarda al cambiarlo.
 export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task; ctx: BoardCtx; onClose: () => void; onChanged: () => void }) {
-  const { isAdmin, member } = useAuth()
+  const { isAdmin, member, can } = useAuth()
   const owner = task.assignee_id ?? task.suggested_assignee_id
   const isOwner = !!member && owner === member.id
-  const canStatus = isAdmin || isOwner
+  // Lo que se puede tocar depende del cargo (el gerente puede todo).
+  const canEdit = can('editar_iniciativas')
+  const canStatus = isOwner || can('cambiar_etapas')
   const subs = ctx.subtasks.filter((s) => s.task_id === task.id)
   const pending = task.needs_approval && !task.assignee_id
   const [error, setError] = useState<string | null>(null)
@@ -135,9 +138,9 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
     }
   }
   const [duplicating, setDuplicating] = useState(false)
-  // Eliminar: el gerente o quien creó la iniciativa. Queda en la papelera 30 minutos para deshacer.
+  // Eliminar: quien creó la iniciativa o un cargo con ese permiso. Queda en la papelera 30 minutos para deshacer.
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const canDelete = isAdmin || (!!member && task.created_by_member === member.id)
+  const canDelete = can('eliminar_iniciativas') || (!!member && task.created_by_member === member.id)
   const remove = async () => {
     setConfirmDelete(false)
     const { data, error } = await supabase.rpc('delete_task', { p_task_id: task.id })
@@ -158,7 +161,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
       await updateTask(task.id, patch)
       track(label, () => updateTask(task.id, prev), { after: onChanged })
     })
-  const owners = ctx.members.filter((m) => m.active && m.can_own)
+  const { owners } = useAssignable(ctx.members)
 
   return (
     <div className="fixed inset-0 z-30 flex justify-end bg-black/30" onClick={onClose}>
@@ -169,7 +172,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
         aria-label={`Iniciativa ${task.title}`}
       >
         <div className="mb-3 flex items-start justify-between gap-3">
-          {isAdmin ? (
+          {canEdit ? (
             <BrandPicker
               value={brandIdsOf(task)}
               brands={ctx.brands}
@@ -195,16 +198,18 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
                   🗑 Eliminar
                 </button>
               ))}
-            <button className={btn} onClick={() => setDuplicating(true)} title="Crear una copia idéntica para otra marca">
-              ⧉ Duplicar
-            </button>
+            {can('duplicar') && (
+              <button className={btn} onClick={() => setDuplicating(true)} title="Crear una copia idéntica para otra marca">
+                ⧉ Duplicar
+              </button>
+            )}
             <button className={btn} onClick={onClose} aria-label="Cerrar">
               Cerrar
             </button>
           </span>
         </div>
 
-        {isAdmin ? (
+        {canEdit ? (
           <input
             id={`ini-title-${task.id}`}
             className="w-full bg-transparent text-xl font-medium outline-none"
@@ -220,7 +225,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
         {error && <div className="mt-2 rounded-lg bg-red-50 p-2 text-[13px] text-red-700 dark:bg-red-950 dark:text-red-200">{error}</div>}
 
         <section className="mt-4">
-          <div className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Etapa{!canStatus && ' (la cambia el responsable o el gerente)'}</div>
+          <div className="mb-1.5 text-xs text-stone-500 dark:text-stone-400">Etapa{!canStatus && ' (la cambia el responsable o quien coordina)'}</div>
           <div className="flex flex-wrap gap-1.5">
             {ctx.stickers.map((s) => {
               const active = s.id === task.sticker_id
@@ -243,7 +248,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
         <section className="mt-4 grid grid-cols-2 gap-3 text-sm">
           <label className="space-y-1">
             <span className="block text-xs text-stone-500 dark:text-stone-400">Responsable</span>
-            {isAdmin ? (
+            {canEdit ? (
               <select
                 className={`${input} w-full`}
                 value={task.assignee_id ?? ''}
@@ -265,7 +270,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
           </label>
           <label className="space-y-1">
             <span className="block text-xs text-stone-500 dark:text-stone-400">Fecha límite</span>
-            {isAdmin ? (
+            {canEdit ? (
               <input
                 type="date"
                 className={`${input} w-full`}
@@ -276,10 +281,10 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
               <span className={isOverdue(task.due_date, task.status === 'hecho') ? 'text-red-600' : ''}>{shortDate(task.due_date)}</span>
             )}
           </label>
-          {(isAdmin || task.agency_id) && (ctx.agencies?.length ?? 0) > 0 && (
+          {(canEdit || task.agency_id) && (ctx.agencies?.length ?? 0) > 0 && (
             <label className="space-y-1">
               <span className="block text-xs text-stone-500 dark:text-stone-400">Agencia</span>
-              {isAdmin ? (
+              {canEdit ? (
                 <select className={`${input} w-full`} value={task.agency_id ?? ''} onChange={(e) => change({ agency_id: e.target.value || null }, `Cambiaste la agencia de «${task.title}»`)}>
                   <option value="">Sin agencia</option>
                   {ctx.agencies
@@ -308,7 +313,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
 
         <section className="mt-4">
           <div className="mb-1 text-xs text-stone-500 dark:text-stone-400">Descripción</div>
-          {isAdmin ? (
+          {canEdit ? (
             <textarea
               id={`ini-desc-${task.id}`}
               className={`${input} w-full`}
@@ -366,7 +371,7 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
           )}
         </section>
 
-        <SubtaskEditor task={task} subtasks={subs} members={ctx.members} canEdit={isAdmin || isOwner} run={run} />
+        <SubtaskEditor task={task} subtasks={subs} members={ctx.members} canEdit={canEdit || isOwner} run={run} />
 
         {task.assignment_reason && !pending && (
           <p className="mt-4 text-[11px] text-stone-400">Asignación: {task.assignment_reason}</p>

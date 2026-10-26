@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { memberName, shortDate, todayISO, useBoard } from '../lib/data'
+import { useAssignable } from '../lib/permissions'
 import { supabase, uniqueChannel } from '../lib/supabase'
 import type { Priority } from '../lib/types'
 import { useUndo } from '../lib/undo'
@@ -94,8 +95,11 @@ function when(iso: string) {
 }
 
 export function RecurringForm({ initial, onSaved, onCancel }: { initial?: RecurringTask; onSaved: (text: string) => void; onCancel: () => void }) {
-  const { isAdmin, member } = useAuth()
+  const { member, can } = useAuth()
   const { members, brands } = useBoard()
+  // Para otras personas: el gerente o un cargo con ese permiso, y solo a quienes puede asignar.
+  const forOthers = can('repetitivas_para_otros')
+  const { people } = useAssignable(members)
   const [title, setTitle] = useState(initial?.title ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [frequency, setFrequency] = useState<Frequency>(initial?.frequency ?? 'semanal')
@@ -133,7 +137,7 @@ export function RecurringForm({ initial, onSaved, onCancel }: { initial?: Recurr
         due_offset: offset,
         priority,
         brand_ids: brandIds,
-        assignee_id: isAdmin ? assignee : null,
+        assignee_id: forOthers ? assignee : null,
         subtasks: subs.split('\n').map((x) => x.trim()).filter(Boolean),
       },
     })
@@ -224,10 +228,9 @@ export function RecurringForm({ initial, onSaved, onCancel }: { initial?: Recurr
         <BrandPicker value={brandIds} onChange={setBrandIds} brands={brands} />
       </div>
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        {isAdmin ? (
+        {forOthers ? (
           <select className={input} value={assignee} onChange={(e) => setAssignee(e.target.value)} aria-label="Para quién">
-            {members
-              .filter((m) => m.active)
+            {people
               .map((m) => (
                 <option key={m.id} value={m.id}>
                   Para {m.name}

@@ -654,7 +654,7 @@ function ActivityFeed() {
 // ---------------------------------------------------------------------------
 
 function HoyMiembro() {
-  const { member } = useAuth()
+  const { member, can } = useAuth()
   const { tasks, subtasks, members, brands, stickers, agencies, reload } = useBoard()
   const { byTask: forwards, schedule: forwardSchedule } = useForwards()
   const ctx: BoardCtx = { members, brands, stickers, subtasks, agencies, forwards, forwardSchedule }
@@ -723,7 +723,7 @@ function HoyMiembro() {
           {entries.length} pendientes tuyos{me ? ` · carga ${Math.round(me.load_ratio * 100)}%` : ''}
         </p>
       </div>
-      <MyMailboxCard />
+      {can('mi_correo') && <MyMailboxCard />}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-4">
           {entries.length === 0 && (
