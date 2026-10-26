@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { QuickAssign } from '../components/QuickAssign'
 import { useUndo } from '../lib/undo'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { Link } from 'react-router-dom'
@@ -84,7 +85,8 @@ function HoyGerente() {
   const [prevRun, setPrevRun] = useState<AgentRun | null>(null)
   const [lastIngest, setLastIngest] = useState<string | null | undefined>(undefined)
   const [threshold, setThreshold] = useState(0.9)
-  const [openPlans, setOpenPlans] = useState<{ id: string; title: string }[]>([])
+  // Lo que espera decisión del gerente: lo por planificar (del equipo o del agente) y los planes listos.
+  const [openPlans, setOpenPlans] = useState<{ id: string; title: string; status: 'sin_planificar' | 'planificando'; created_by: string | null; auto_plan: boolean }[]>([])
   const [category, setCategory] = useState<string>('')
   // Pendientes ya creados por correo (desde la base: no se pierde al recargar).
   const [existing, setExisting] = useState<Record<string, ExistingItem[]>>({})
@@ -98,7 +100,7 @@ function HoyGerente() {
       supabase.from('agent_runs').select('*').order('ran_at', { ascending: false }).limit(2),
       supabase.from('ingest_state').select('last_ingest_at').eq('id', 1).maybeSingle(),
       supabase.from('settings').select('saturation_threshold').eq('id', 1).maybeSingle(),
-      supabase.from('list_items').select('id, title').eq('status', 'planificando').order('created_at'),
+      supabase.from('list_items').select('id, title, status, created_by, auto_plan').in('status', ['sin_planificar', 'planificando']).is('task_id', null).order('created_at'),
     ])
     const err = pending.error ?? today.error ?? lastRun.error ?? plans.error
     setError(err ? err.message : null)
@@ -120,7 +122,7 @@ function HoyGerente() {
     setPrevRun(runs[1] ?? null)
     setLastIngest(ingest.data?.last_ingest_at ?? null)
     setThreshold(Number(settings.data?.saturation_threshold ?? 0.9))
-    setOpenPlans((plans.data ?? []) as { id: string; title: string }[])
+    setOpenPlans((plans.data ?? []) as typeof openPlans)
   }, [])
 
   useEffect(() => {
@@ -221,7 +223,7 @@ function HoyGerente() {
         <div className="mb-2 text-xs text-stone-500 dark:text-stone-400">Necesita tu atención</div>
         <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <AttentionTile tone="danger" icon="✉" value={p1.length} label="Responder hoy" onClick={() => scrollTo('bandeja')} />
-          <AttentionTile tone="accent" icon="⇄" value={approvals.length + openPlans.length} label="Repartos por decidir" onClick={() => scrollTo('decidir')} />
+          <AttentionTile tone="accent" icon="⇄" value={approvals.length + openPlans.length} label="Por asignar" onClick={() => scrollTo('decidir')} />
           <AttentionTile tone="warning" icon="⏱" value={overdueTasks.length + overdueSubs.length} label="Vencidas" onClick={() => scrollTo('vencidas')} />
           <AttentionTile tone="neutral" icon="▮" value={saturated.length} label={saturated.length === 1 ? 'Persona saturada' : 'Personas saturadas'} onClick={() => scrollTo('equipo')} />
         </div>
@@ -272,23 +274,31 @@ function HoyGerente() {
 
           <section id="decidir" className="scroll-mt-20">
             <SectionTitle right={<Link className="text-xs text-indigo-600 dark:text-indigo-400" to="/iniciativas">Ir a Iniciativas</Link>}>
-              Repartos por decidir
+              Por asignar
             </SectionTitle>
             <div className="space-y-2">
               {openPlans.length === 0 && approvals.length === 0 && (
                 <Card>
-                  <Empty>No hay repartos esperando tu decisión.</Empty>
+                  <Empty>No hay nada esperando que lo asignes.</Empty>
                 </Card>
               )}
               {openPlans.length > 0 && (
                 <Card className="divide-y divide-stone-200 dark:divide-stone-800">
                   {openPlans.map((p) => (
-                    <div key={p.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                      <span className="text-indigo-600 dark:text-indigo-400">✦</span>
-                      <span className="min-w-0 flex-1 truncate">{p.title}</span>
-                      <Tag tone="accent">Plan recomendado</Tag>
+                    <div key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5 text-sm">
+                      <span className={p.status === 'planificando' ? 'text-indigo-600 dark:text-indigo-400' : ''} aria-hidden="true">
+                        {p.status === 'planificando' ? '✦' : '📝'}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{p.title}</span>
+                        <span className="block text-[11px] text-stone-500 dark:text-stone-400">
+                          {p.created_by ? `Lo propuso ${memberName(members, p.created_by) ?? 'alguien del equipo'}` : 'Llegó por correo'}
+                        </span>
+                      </span>
+                      {p.status === 'planificando' ? <Tag tone="accent">Plan recomendado</Tag> : p.auto_plan ? <Tag>Plan en camino ✦</Tag> : null}
+                      <QuickAssign item={p} members={members} onDone={() => { loadInbox(); reload() }} />
                       <Link className={btn} to={`/iniciativas?plan=${p.id}`}>
-                        Revisar
+                        {p.status === 'planificando' ? 'Revisar plan' : 'Planificar'}
                       </Link>
                     </div>
                   ))}

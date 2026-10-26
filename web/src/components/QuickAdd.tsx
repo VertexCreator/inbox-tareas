@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useAssignable } from '../lib/permissions'
 import { RecurringForm } from './Recurring'
 import { BrandPicker } from './Brands'
 import { useNavigate } from 'react-router-dom'
@@ -90,8 +91,9 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const owners = members.filter((m) => m.active && m.can_own)
-  const active = members.filter((m) => m.active)
+  // A quién puede asignar quien crea: el gerente a cualquiera; cada miembro, a sí y a quienes le autorizaron.
+  const { owners, people } = useAssignable(members)
+  const active = people
   const liveBrands = brands.filter((b) => !b.archived)
 
   const submit = async (e: FormEvent) => {
@@ -115,12 +117,12 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
           search_query: searchEmail ? query : null,
         },
       })
-      if (!error && agency && newId) await supabase.from('tasks').update({ agency_id: agency }).eq('id', newId)
+      if (!error && isAdmin && agency && newId) await supabase.from('tasks').update({ agency_id: agency }).eq('id', newId)
       setBusy(false)
       if (error) return setError(error.message)
       return setDone({
         text:
-          (owner ? 'Iniciativa creada y asignada.' : 'Iniciativa creada. El agente sugirió un responsable: apruébalo en Hoy o en el detalle.') +
+          (owner ? 'Iniciativa creada y asignada.' : isAdmin ? 'Iniciativa creada. El agente sugirió un responsable: apruébalo en Hoy o en el detalle.' : 'Iniciativa creada y asignada a ti.') +
           (searchEmail ? ' El script buscará el correo relacionado en los próximos 5 minutos y lo vinculará.' : ''),
         to: '/iniciativas',
         label: 'Ver en Iniciativas',
@@ -219,10 +221,10 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
           </div>
         ) : (
           <div className="space-y-4">
-              <div className={`grid gap-2 ${isAdmin ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2'}`}>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {(
                   [
-                    ...(isAdmin ? ([['iniciativa', 'Iniciativa directa', 'Va al tablero ya asignada, con sus subtareas.']] as const) : []),
+                    ['iniciativa', 'Iniciativa directa', isAdmin ? 'Va al tablero ya asignada, con sus subtareas.' : 'Para ti o para quien el gerente te autorizó.'],
                     ['pendiente', '📝 Por planificar', isAdmin ? 'Va a una lista; el agente propone tarea, subtareas y personas.' : 'Va a una lista para que el gerente la reparta.'],
                     ['repetitiva', '🔁 Repetitiva', 'Se crea sola cada día, semana, 15 días o mes.'],
                   ] as const
@@ -273,7 +275,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
             </div>
 
             <BrandPicker value={brandIds} onChange={setBrandIds} brands={liveBrands} />
-            {agencies.some((a) => !a.archived) && (
+            {agencies.some((a) => !a.archived) && (isAdmin || mode !== 'iniciativa') && (
               <select className={input} value={agency} onChange={(e) => setAgency(e.target.value)} aria-label="Agencia">
                 <option value="">Agencia (opcional)</option>
                 {agencies
@@ -295,7 +297,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
               {mode === 'iniciativa' ? (
                 <>
                   <select className={input} value={owner} onChange={(e) => setOwner(e.target.value)} aria-label="Responsable">
-                    <option value="">Responsable: que sugiera el agente</option>
+                    <option value="">{isAdmin ? 'Responsable: que sugiera el agente' : 'Responsable: yo'}</option>
                     {owners.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name}

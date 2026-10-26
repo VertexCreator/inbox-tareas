@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { QuickAssign } from '../components/QuickAssign'
 import { useSearchParams } from 'react-router-dom'
 import { BrandOverview, BrandSummary, BrandTab, NewBrand, NewInitiative } from '../components/BoardParts'
 import { BrandChips, brandIdsOf, isMultibrand } from '../components/Brands'
@@ -540,9 +541,10 @@ function PlanActions({ row: r, rctx, compact = false }: { row: Row; rctx: RowCtx
   const small = 'text-[11px] font-medium hover:underline'
   return (
     <span className="flex flex-wrap items-center gap-2">
+      {rctx.isAdmin && item.status !== 'descartado' && <QuickAssign item={item} members={rctx.board.members} onDone={rctx.onAccepted} compact={compact} />}
       {rctx.isAdmin && item.status !== 'descartado' && (
         <button className={compact ? `${small} text-indigo-600 dark:text-indigo-400` : item.status === 'planificando' ? btnPrimary : btnDetail} onClick={() => rctx.onPlan(item.id)}>
-          {item.status === 'planificando' ? 'Revisar plan' : 'Planificar →'}
+          {item.status === 'planificando' ? 'Revisar plan' : 'Planificar con subtareas →'}
         </button>
       )}
       {rctx.isAdmin && item.status === 'sin_planificar' && (

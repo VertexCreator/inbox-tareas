@@ -132,6 +132,7 @@ export function Equipo() {
                     return null
                   }}
                 />
+                {!m.is_admin && <AssignPermissions member={m} members={members} />}
               </div>
             ) : (
               <>
@@ -495,5 +496,55 @@ function AnalysisLimit({ allowed }: { allowed: number }) {
       </button>
       {msg && <span className="text-xs text-stone-500">{msg}</span>}
     </Card>
+  )
+}
+
+// A quién le puede asignar tareas esta persona (el gerente lo decide). Siempre puede asignarse a sí misma.
+function AssignPermissions({ member, members }: { member: Member; members: Member[] }) {
+  const [targets, setTargets] = useState<string[] | null>(null)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  useEffect(() => {
+    supabase
+      .from('assignment_permissions')
+      .select('target_id')
+      .eq('member_id', member.id)
+      .then(({ data }) => setTargets((data ?? []).map((x) => x.target_id as string)))
+  }, [member.id])
+  if (targets === null) return null
+  const others = members.filter((m) => m.active && m.id !== member.id)
+  const save = async (next: string[]) => {
+    setTargets(next)
+    const { error } = await supabase.rpc('set_assignment_permissions', { p_member: member.id, p_targets: next })
+    setMsg(error ? { ok: false, text: error.message } : { ok: true, text: 'Guardado.' })
+  }
+  const toggle = (id: string) => save(targets.includes(id) ? targets.filter((x) => x !== id) : [...targets, id])
+  return (
+    <div className="mt-3 space-y-2 rounded-lg border border-stone-200 p-3 dark:border-stone-800">
+      <div className="text-sm font-medium">{member.name} puede asignar tareas a:</div>
+      <p className="text-xs text-stone-500 dark:text-stone-400">
+        Al crear una iniciativa (en + Nueva tarea o desde su correo) solo verá a estas personas como responsables y para subtareas. Siempre puede asignarse a sí misma.
+      </p>
+      <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-sm">
+        {others.map((o) => (
+          <label key={o.id} className="flex items-center gap-1.5">
+            <input type="checkbox" checked={targets.includes(o.id)} onChange={() => toggle(o.id)} />
+            {o.name}
+            {o.is_admin && <span className="text-xs text-indigo-600 dark:text-indigo-400">(gerente)</span>}
+          </label>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <button className="text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => save(others.map((o) => o.id))}>
+          A todo el equipo
+        </button>
+        <button className="text-indigo-600 hover:underline dark:text-indigo-400" onClick={() => save(others.filter((o) => !o.is_admin).map((o) => o.id))}>
+          A todos menos los gerentes
+        </button>
+        <button className="text-stone-500 hover:underline" onClick={() => save([])}>
+          Solo a sí misma
+        </button>
+        {msg && <span className={msg.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600'}>{msg.text}</span>}
+      </div>
+    </div>
   )
 }

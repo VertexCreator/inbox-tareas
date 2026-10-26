@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useAssignable } from '../lib/permissions'
 import { useAuth } from '../lib/auth'
 import { BrandPicker, brandIdsOf } from './Brands'
 import { useNavigate } from 'react-router-dom'
@@ -73,8 +74,8 @@ export function EmailTaskModal({ email: e, members, brands, stickers, existing, 
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<{ text: string; to: string; label: string } | null>(null)
 
-  const owners = members.filter((m) => m.active && m.can_own)
-  const active = members.filter((m) => m.active)
+  // Responsables y personas para subtareas: el gerente, cualquiera; cada miembro, quienes le autorizaron.
+  const { owners, people: active } = useAssignable(members)
 
   useEffect(() => {
     supabase

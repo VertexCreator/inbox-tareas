@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { UndoButton } from '../lib/undo'
 import { ForwardToasts } from './ForwardStatus'
-import { supabase } from '../lib/supabase'
+import { supabase, uniqueChannel } from '../lib/supabase'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { ChangePassword } from '../pages/Login'
@@ -20,10 +20,30 @@ export function Layout() {
   const [changingPassword, setChangingPassword] = useState(false)
   const [adding, setAdding] = useState(false)
   const location = useLocation()
+  // Contador para el gerente: lo que está por planificar y espera que lo asigne.
+  const [toAssign, setToAssign] = useState(0)
+  useEffect(() => {
+    if (!isAdmin) return
+    const count = () =>
+      supabase
+        .from('list_items')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['sin_planificar', 'planificando'])
+        .is('task_id', null)
+        .then(({ count }) => setToAssign(count ?? 0))
+    count()
+    const channel = supabase
+      .channel(uniqueChannel('nav-por-asignar'))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'list_items' }, () => count())
+      .subscribe()
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [isAdmin])
   const links = [
     { to: '/', label: 'Hoy' },
     { to: '/mis-tareas', label: 'Mis tareas' },
-    { to: '/iniciativas', label: 'Iniciativas' },
+    { to: '/iniciativas', label: 'Iniciativas', badge: isAdmin ? toAssign : 0 },
     ...(isAdmin ? [] : [{ to: '/mi-correo', label: 'Mi correo' }]),
     { to: '/equipo', label: 'Equipo' },
     ...(isAdmin ? [{ to: '/configuracion', label: 'Configuración' }] : []),
@@ -51,6 +71,11 @@ export function Layout() {
                 }
               >
                 {l.label}
+                {'badge' in l && l.badge ? (
+                  <span className="ml-1.5 rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white tabular-nums" title={`${l.badge} por asignar`} aria-label={`${l.badge} por asignar`}>
+                    {l.badge}
+                  </span>
+                ) : null}
               </NavLink>
             ))}
           </nav>

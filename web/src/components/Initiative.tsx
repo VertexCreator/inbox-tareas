@@ -135,6 +135,20 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
     }
   }
   const [duplicating, setDuplicating] = useState(false)
+  // Eliminar: el gerente o quien creó la iniciativa. Queda en la papelera 30 minutos para deshacer.
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const canDelete = isAdmin || (!!member && task.created_by_member === member.id)
+  const remove = async () => {
+    setConfirmDelete(false)
+    const { data, error } = await supabase.rpc('delete_task', { p_task_id: task.id })
+    if (error) return setError(error.message)
+    track(`Eliminaste «${task.title}»`, async () => {
+      const r = await supabase.rpc('restore_task', { p_trash_id: data })
+      if (r.error) throw new Error(r.error.message)
+    }, { after: onChanged })
+    onClose()
+    onChanged()
+  }
   // Cada cambio queda con "↶ Deshacer": se guarda el valor anterior de lo que se cambió.
   const { track } = useUndo()
   const change = (patch: Parameters<typeof updateTask>[1], label: string) =>
@@ -164,7 +178,23 @@ export function InitiativeDetail({ task, ctx, onClose, onChanged }: { task: Task
           ) : (
             <BrandChips ids={brandIdsOf(task)} brands={ctx.brands} />
           )}
-          <span className="flex shrink-0 gap-1.5">
+          <span className="flex shrink-0 flex-wrap justify-end gap-1.5">
+            {canDelete &&
+              (confirmDelete ? (
+                <span className="flex items-center gap-1.5 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-800 dark:bg-red-950 dark:text-red-200">
+                  ¿Eliminar esta iniciativa?
+                  <button className={`${btn} px-2 py-0.5 text-xs text-red-600`} onClick={remove}>
+                    Sí, eliminar
+                  </button>
+                  <button className={`${btn} px-2 py-0.5 text-xs`} onClick={() => setConfirmDelete(false)}>
+                    No
+                  </button>
+                </span>
+              ) : (
+                <button className={`${btn} text-red-600 dark:text-red-400`} onClick={() => setConfirmDelete(true)} title="Eliminar la iniciativa (se puede deshacer)">
+                  🗑 Eliminar
+                </button>
+              ))}
             <button className={btn} onClick={() => setDuplicating(true)} title="Crear una copia idéntica para otra marca">
               ⧉ Duplicar
             </button>

@@ -176,6 +176,9 @@ persona nueva. Si te la asignas a ti, no se reenvía. El gerente puede pulsar **
 Configuración → Script de Gmail → **Reenviar el correo al asignar**. Gmail acepta hasta 25 MB por correo: si los
 adjuntos no caben, el correo dice cuáles quedaron fuera.
 
+**🗑 Eliminar una iniciativa:** en su detalle, **🗑 Eliminar** (con confirmación). Lo pueden hacer el gerente y quien
+creó la iniciativa. Se puede **↶ Deshacer** durante 30 minutos; vuelve con sus subtareas.
+
 **⧉ Duplicar para otra marca:** en el detalle de cualquier iniciativa, **⧉ Duplicar** crea una copia idéntica en la
 que solo cambia la marca. Lo puede hacer cualquier persona del equipo.
 
@@ -295,7 +298,13 @@ agente el párrafo de cada una. El agente decide:
 Para cambiar las marcas (solo el gerente), en el detalle de la iniciativa o del plan pulsa **+ Marca** para sumar
 otra, **×** para quitarla, o haz clic en una marca para volverla la principal.
 
-**El gerente** convierte lo por planificar en iniciativas (botón **Planificar →** en la tarjeta):
+**El gerente** tiene dos formas de convertir lo por planificar en iniciativa:
+
+- **Asignar a… ▾** (en la tarjeta y en **Hoy → Por asignar**): eliges a la persona y queda como iniciativa al instante,
+  sin subtareas. La pestaña **Iniciativas** muestra un número con cuántas cosas esperan que las asignes.
+- **Planificar con subtareas →**: arma el plan completo, como se explica abajo.
+
+Para planificar con subtareas:
 
 1. **Planificar:** el dashboard propone al instante una iniciativa con subtareas. Usa la plantilla que mejor
    calza: campaña en redes, lanzamiento, evento, newsletter, nota de prensa, blog o tarea simple. Cada subtarea
@@ -357,6 +366,9 @@ Algunos detalles de la recomendación:
   - **Capacidad:** 10 = tiempo completo; 5 = medio tiempo.
   - **Puede ser responsable de iniciativas:** solo quienes lo tienen marcado aparecen como responsables.
   - **Disponible:** desmárcalo durante vacaciones para que el agente no le recomiende trabajo.
+  - **Puede asignar tareas a:** las personas a las que esta persona puede asignarle iniciativas y subtareas, incluido el
+    gerente si lo marcas. Siempre puede asignarse a sí misma. Al empezar, cada miembro puede asignar a sus compañeros
+    pero no a los gerentes.
   - **Puede pedir análisis al agente:** habilita **✦ Pedir análisis** en su Mi correo. Usa tu plan de Claude; el límite
     diario por persona se ajusta en el recuadro **Análisis del agente para el equipo**, arriba de la lista.
 - Cada persona muestra si conectó su Gmail (**✉ Gmail conectado**).
@@ -381,7 +393,10 @@ Algunos detalles de la recomendación:
 | Marcar sus propias subtareas | ✓ | ✓ | ✓ |
 | Cambiar etapa (también arrastrando) y observación | | ✓ | ✓ |
 | Crear y editar subtareas de la iniciativa | | ✓ | ✓ |
-| Ver su propio correo y crear y asignar iniciativas desde él (Mi correo) | ✓ | ✓ | ✓ |
+| Ver su propio correo y crear iniciativas desde él (Mi correo) | ✓ | ✓ | ✓ |
+| Crear iniciativas y asignarlas a sí mismo | ✓ | ✓ | ✓ |
+| Asignar iniciativas a otras personas | a quienes el gerente autorice | a quienes el gerente autorice | a cualquiera |
+| Eliminar una iniciativa | las que creó | las que creó | ✓ |
 | Pedir análisis al agente | si el gerente lo habilita | si el gerente lo habilita | |
 | Crear iniciativas, marcas, etapas y agencias; planificar | | | ✓ |
 | Cambiar marca, responsable, fechas y descripción | | | ✓ |
