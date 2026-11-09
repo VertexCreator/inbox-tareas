@@ -107,7 +107,8 @@ export interface ListRow {
   created_at: string
 }
 
-export type ItemStatus = 'sin_planificar' | 'planificando' | 'planificado' | 'descartado'
+// 'hecho': se resolvió sin convertirlo en iniciativa (✓ Listo).
+export type ItemStatus = 'sin_planificar' | 'planificando' | 'planificado' | 'descartado' | 'hecho'
 
 export interface ListItem {
   id: string

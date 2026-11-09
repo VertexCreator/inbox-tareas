@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react'
-import { QuickAssign } from '../components/QuickAssign'
+import { CloseItem, QuickAssign } from '../components/QuickAssign'
 import { useSearchParams } from 'react-router-dom'
 import { BrandOverview, BrandSummary, BrandTab, NewBrand, NewInitiative } from '../components/BoardParts'
 import { BrandChips, brandIdsOf, isMultibrand } from '../components/Brands'
@@ -36,7 +36,7 @@ const VIEWS: { id: View; label: string; icon: string }[] = [
   { id: 'calendario', label: 'Calendario', icon: '▦' },
 ]
 
-const PLAN_LABEL: Record<string, string> = { sin_planificar: 'Por planificar', planificando: 'Plan listo para revisar', descartado: 'Descartado' }
+const PLAN_LABEL: Record<string, string> = { sin_planificar: 'Por planificar', planificando: 'Plan listo para revisar', descartado: 'Descartado', hecho: '✓ Listo' }
 
 // Una fila es algo "Por planificar" (de una lista) o una iniciativa (del tablero).
 interface Row {
@@ -61,7 +61,6 @@ interface Row {
 export function Iniciativas() {
   const { isAdmin, member, can } = useAuth()
   const { tasks, subtasks, members, brands, stickers, agencies, error, reload } = useBoard()
-  const { track } = useUndo()
   const [params] = useSearchParams()
   const [lists, setLists] = useState<ListRow[]>([])
   const [items, setItems] = useState<ListItem[]>([])
@@ -114,7 +113,7 @@ export function Iniciativas() {
   // Todas las filas: lo por planificar (sin tarea todavía) y todas las iniciativas.
   const allRows: Row[] = useMemo(() => {
     const plan: Row[] = items
-      .filter((i) => !i.task_id && (i.status === 'sin_planificar' || i.status === 'planificando' || (i.status === 'descartado' && showDiscarded)))
+      .filter((i) => !i.task_id && (i.status === 'sin_planificar' || i.status === 'planificando' || ((i.status === 'descartado' || i.status === 'hecho') && showDiscarded)))
       .map((i) => ({
         key: `i-${i.id}`,
         kind: 'plan',
@@ -130,7 +129,7 @@ export function Iniciativas() {
         subs: [],
         listId: i.list_id,
         done: false,
-        closed: i.status === 'descartado',
+        closed: i.status === 'descartado' || i.status === 'hecho',
       }))
     const inits: Row[] = tasks.map((t) => {
       const subs = subtasks.filter((s) => s.task_id === t.id)
@@ -178,15 +177,6 @@ export function Iniciativas() {
   const brandCount = (fn: (r: Row) => boolean) => allRows.filter((r) => !r.closed && fn(r)).length
   const visibleTasks = rows.filter((r) => r.task).map((r) => r.task!)
 
-  const discard = async (item: ListItem) => {
-    const { error } = await supabase.from('list_items').update({ status: 'descartado' }).eq('id', item.id)
-    if (error) return setMsg(error.message)
-    loadLists()
-    track(`Descartaste «${item.title}»`, async () => {
-      const { error } = await supabase.from('list_items').update({ status: item.status }).eq('id', item.id)
-      if (error) throw new Error(error.message)
-    }, { after: loadLists })
-  }
   const remove = async (item: ListItem) => {
     const { error } = await supabase.from('list_items').delete().eq('id', item.id)
     if (error) setMsg(error.message)
@@ -203,7 +193,6 @@ export function Iniciativas() {
     showList: listFilter === ALL,
     onOpen: (r) => (r.task ? setOpenId(r.task.id) : can('repartir') && r.item && setPlanning(r.item.id)),
     onPlan: (id) => setPlanning(id),
-    onDiscard: discard,
     onRemove: remove,
     onAccepted: reloadAll,
   }
@@ -291,7 +280,7 @@ export function Iniciativas() {
         </label>
         <label className="flex items-center gap-1.5">
           <input type="checkbox" checked={showDiscarded} onChange={(e) => setShowDiscarded(e.target.checked)} />
-          Mostrar descartadas
+          Mostrar listas y descartadas
         </label>
         {view === 'tablero' && (
           <label className="flex items-center gap-1.5">
@@ -383,7 +372,6 @@ interface RowCtx {
   showList: boolean
   onOpen: (r: Row) => void
   onPlan: (itemId: string) => void
-  onDiscard: (item: ListItem) => void
   onRemove: (item: ListItem) => void
   onAccepted: () => void
 }
@@ -546,17 +534,13 @@ function PlanActions({ row: r, rctx, compact = false }: { row: Row; rctx: RowCtx
   const small = 'text-[11px] font-medium hover:underline'
   return (
     <span className="flex flex-wrap items-center gap-2">
-      {rctx.canPlan && item.status !== 'descartado' && <QuickAssign item={item} members={rctx.board.members} onDone={rctx.onAccepted} compact={compact} />}
-      {rctx.canPlan && item.status !== 'descartado' && (
+      {rctx.canPlan && !r.closed && <QuickAssign item={item} members={rctx.board.members} onDone={rctx.onAccepted} compact={compact} />}
+      {rctx.canPlan && !r.closed && (
         <button className={compact ? `${small} text-indigo-600 dark:text-indigo-400` : item.status === 'planificando' ? btnPrimary : btnDetail} onClick={() => rctx.onPlan(item.id)}>
           {item.status === 'planificando' ? 'Revisar plan' : 'Planificar con subtareas →'}
         </button>
       )}
-      {rctx.canPlan && item.status === 'sin_planificar' && (
-        <button className={compact ? `${small} text-stone-500` : btn} onClick={() => rctx.onDiscard(item)}>
-          Descartar
-        </button>
-      )}
+      {rctx.canPlan && !r.closed && <CloseItem item={item} onDone={rctx.onAccepted} compact={compact} />}
       {mine && (
         <button className={compact ? `${small} text-red-600` : `${btn} text-red-600`} onClick={() => rctx.onRemove(item)}>
           Borrar

@@ -590,6 +590,8 @@ function Proposed({ personId, isMe, ctx, onOpen }: { personId: string; isMe: boo
                 ? { icon: '✦', text: 'El plan está listo; el gerente lo revisa', cls: 'text-indigo-700 dark:text-indigo-300' }
                 : it.status === 'descartado'
                   ? { icon: '–', text: 'Descartado', cls: 'text-stone-400' }
+                  : it.status === 'hecho'
+                    ? { icon: '✓', text: 'Listo: se resolvió sin crear una iniciativa', cls: 'text-emerald-700 dark:text-emerald-300' }
                   : { icon: '⏳', text: it.auto_plan ? 'Esperando: el agente le arma un plan' : 'Esperando que el gerente lo reparta', cls: 'text-amber-700 dark:text-amber-300' }
           return (
             <div key={it.id} className="flex flex-wrap items-start gap-3 px-4 py-3">

@@ -306,6 +306,15 @@ formas de convertir lo por planificar en iniciativa:
   sin subtareas. La pestaña **Iniciativas** muestra un número con cuántas cosas esperan que las asignes.
 - **Planificar con subtareas →**: arma el plan completo, como se explica abajo.
 
+Si no hace falta convertirlo en iniciativa:
+
+- **✓ Listo**: ya se hizo (por ejemplo, lo resolviste tú misma con una respuesta). Sale de Por planificar.
+- **Descartar**: no hace falta hacerlo.
+
+Los dos aparecen también cuando el agente ya dejó el **plan listo para revisar**, y en **Hoy → Por asignar**. Se
+pueden deshacer con **↶ Deshacer** (si tenía plan, lo recupera). Para verlos después, marca **Mostrar listas y
+descartadas** en Iniciativas.
+
 Para planificar con subtareas:
 
 1. **Planificar:** el dashboard propone al instante una iniciativa con subtareas. Usa la plantilla que mejor

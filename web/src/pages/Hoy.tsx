@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import { QuickAssign } from '../components/QuickAssign'
+import { CloseItem, QuickAssign } from '../components/QuickAssign'
 import { useUndo } from '../lib/undo'
 import { BrandChips, brandIdsOf, hasBrand } from '../components/Brands'
 import { Link } from 'react-router-dom'
@@ -300,6 +300,7 @@ function HoyGerente() {
                       <Link className={btn} to={`/iniciativas?plan=${p.id}`}>
                         {p.status === 'planificando' ? 'Revisar plan' : 'Planificar'}
                       </Link>
+                      <CloseItem item={p} onDone={() => { loadInbox(); reload() }} />
                     </div>
                   ))}
                 </Card>
